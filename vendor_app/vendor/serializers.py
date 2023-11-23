@@ -44,3 +44,32 @@ class VendorSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         return super().update(instance, validated_data)
+
+
+class GenerateTokenSerializer(serializers.Serializer):
+    """
+    Serializer to take input for generating token.
+    """
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        email = data['email']
+        password = data['password']
+        if not email:
+            raise serializers.ValidationError("Email is required.")
+        elif not password:
+            raise serializers.ValidationError("Password is required.")
+
+        vendor = get_user_model().objects.filter(email__iexact=email)
+
+        if not vendor.exists():
+            raise serializers.ValidationError(
+                "Vendor does not exist! Please register."
+            )
+
+        vendor = vendor.first()
+        if vendor.check_password(password) is False:
+            raise serializers.ValidationError("Incorrect Password.")
+
+        return vendor

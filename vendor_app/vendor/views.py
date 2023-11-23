@@ -3,7 +3,8 @@
 """
 
 from .serializers import (
-    VendorSerializer
+    VendorSerializer,
+    GenerateTokenSerializer
 )
 from .models import Vendor
 
@@ -11,6 +12,12 @@ from rest_framework.generics import (
     ListCreateAPIView,
     RetrieveUpdateDestroyAPIView
 )
+from rest_framework import permissions
+from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 
 class ListCreateVendorView(ListCreateAPIView):
@@ -19,7 +26,15 @@ class ListCreateVendorView(ListCreateAPIView):
         Create new vendor with post method.
     """
     serializer_class = VendorSerializer
-    queryset = Vendor.objects.all()
+    # queryset = Vendor.objects.filter()
+
+    def get_queryset(self):
+        """
+            Ensure only vendors are listed.
+            Admin users are excluded.
+        """
+        queryset = Vendor.objects.filter(is_seller=True)
+        return queryset
 
 
 class ManageVendorView(RetrieveUpdateDestroyAPIView):
@@ -30,4 +45,25 @@ class ManageVendorView(RetrieveUpdateDestroyAPIView):
 
     serializer_class = VendorSerializer
     queryset = Vendor.objects.all()
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'id'
+
+
+class GenerateTokenView(APIView):
+    """
+    View to generate tokens.
+    """
+
+    @extend_schema(request=GenerateTokenSerializer, responses=None)
+    def post(self, request, *args, **kwargs):
+        serializer = GenerateTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        refresh = RefreshToken.for_user(data)
+        return Response(
+            {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        )

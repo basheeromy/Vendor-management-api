@@ -4,7 +4,12 @@
 
 from django.test import TestCase
 from vendor.models import Vendor
-from vendor.serializers import VendorSerializer
+from vendor.serializers import (
+    VendorSerializer,
+    GenerateTokenSerializer
+)
+from django.urls import reverse
+from rest_framework.test import APIClient
 
 
 class VendorSerializerTestCase(TestCase):
@@ -18,7 +23,6 @@ class VendorSerializerTestCase(TestCase):
         'address': 'test address, street one, India',
         'vendor_code': '87654324',
         'password': 'testpass123'
-
     }
 
     def test_vendor_serializer(self):
@@ -96,3 +100,67 @@ class VendorSerializerTestCase(TestCase):
 
         # Check updated password.
         self.assertTrue(updated_vendor.check_password('1234567'))
+
+
+class GenerateTokenSerializerTest(TestCase):
+    """
+        Unit test for Generate token serializer.
+    """
+    def setUp(self):
+        """
+            Setup data for testing.
+        """
+
+        self.vendor_data = {
+            'email': 'testuser123@example.com',
+            'name': 'test Vendor',
+            'contact_details': 'email:tetvendor@example.com',
+            'address': 'test address, street one, India',
+            'vendor_code': '87654324',
+            'password': 'testpass123'
+        }
+
+        self.input_data = {
+            'email': 'testuser123@example.com',
+            'password': 'testpass123'
+        }
+
+        # Create a vendor for testing.
+        self.client = APIClient()
+        create_vendor_url = reverse("list-create-vendor")
+        self.vendor = self.client.post(
+            create_vendor_url,
+            self.vendor_data
+        )
+
+    def test_generate_token_serializer(self):
+        """
+            Test data validation
+        """
+
+        # check validation
+        serializer = GenerateTokenSerializer(data=self.input_data)
+        self.assertTrue(serializer.is_valid())
+
+        # check returned data fields.
+        serialized_data = serializer.data
+        self.assertEqual(
+            serialized_data['email'],
+            'testuser123@example.com'
+        )
+        vendor_instance = Vendor.objects.get(id=1)
+        self.assertEqual(
+            serialized_data['password'],
+            vendor_instance.password
+        )
+
+    def test_vendor_serializer_invalid_data(self):
+        """
+            Test invalid data fails validation
+        """
+        # create invalid data for testing
+        invalid_data = self.input_data.copy()
+        invalid_data.pop('email')
+
+        serializer = GenerateTokenSerializer(data=invalid_data)
+        self.assertFalse(serializer.is_valid())

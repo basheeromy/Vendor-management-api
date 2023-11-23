@@ -65,6 +65,8 @@ class ListCreateVendorViewTest(TestCase):
 class ManageVendorViewTest(TestCase):
     """
         Unit test for ManageVendorView.
+        This test class tests GenerateTokenView and
+        refresh token generating endpoint too
     """
 
     def setUp(self):
@@ -80,16 +82,39 @@ class ManageVendorViewTest(TestCase):
             'vendor_code': '87654378',
             'password': 'testpass1234'
         }
-        self.vendor = Vendor.objects.create(**self.vendor_data)
-        self.url = reverse('manage-vendor', kwargs={'id': self.vendor.id})
+        input_data = {
+            "email": "testvendor@example.com",
+            "password": 'testpass1234'
+        }
+
+        # Create a vendor for testing.
+        create_vendor_url = reverse("list-create-vendor")
+        self.vendor = self.client.post(create_vendor_url, self.vendor_data)
+        # self.expected_data = Vendor.objects.create(**self.vendor_data)
+
+        # generate access token
+        access_token_url = reverse('obtain-token-pair')
+        response = self.client.post(access_token_url, input_data)
+        self.accesstoken = response.json().get('access')
+        self.refresh_token = response.json().get('refresh')
+
+        self.url = reverse('manage-vendor', kwargs={'id': 1})
+        self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
 
     def test_vendor_retrieve(self):
         """
             Test GET request to retrieve a vendor
         """
-        response = self.client.get(self.url)
+        # send get request.
+        response = self.client.get(self.url, headers=self.headers)
+
+        # check status code
         self.assertEqual(response.status_code, 200)
-        expected_data = VendorSerializer(instance=self.vendor).data
+
+        # generate expected data
+        expected_data = VendorSerializer(instance=self.vendor.json()).data
+
+        # compare expected data with response
         self.assertEqual(response.data, expected_data)
 
     def test_vendor_update(self):
@@ -105,9 +130,13 @@ class ManageVendorViewTest(TestCase):
             'password': 'updatedpass321'
 
         }
-        response = self.client.put(self.url, updated_data)
+        response = self.client.put(
+            self.url,
+            updated_data,
+            headers=self.headers
+        )
         self.assertEqual(response.status_code, 200)
-        updated_vendor = Vendor.objects.get(id=self.vendor.id)
+        updated_vendor = Vendor.objects.get(id=self.vendor.json()['id'])
         self.assertEqual(updated_vendor.name, 'updated vendor')
         self.assertEqual(updated_vendor.contact_details, 'updated@example.com')
         self.assertTrue(updated_vendor.check_password('updatedpass321'))
@@ -116,7 +145,28 @@ class ManageVendorViewTest(TestCase):
         """
             Test DELETE request to delete a vendor
         """
-        response = self.client.delete(self.url)
+        response = self.client.delete(self.url, headers=self.headers)
         self.assertEqual(response.status_code, 204)
-        deleted_vendor = Vendor.objects.filter(id=self.vendor.id).first()
+        deleted_vendor = Vendor.objects.filter(
+            id=self.vendor.json()['id']
+        ).first()
         self.assertIsNone(deleted_vendor)
+
+    def test_refresh_token_endpoint(self):
+        """
+            Test generating new acess token with refresh token.
+        """
+        refresh_token_url = reverse('refresh-token')
+        input_data = {
+            "refresh": self.refresh_token
+        }
+        response = self.client.post(refresh_token_url, input_data)
+        self.accesstoken = response.json().get('access')
+        self.refresh_token = response.json().get('refresh')
+
+        # Check new access token.
+        # send get request.
+        response = self.client.get(self.url, headers=self.headers)
+
+        # check status code
+        self.assertEqual(response.status_code, 200)

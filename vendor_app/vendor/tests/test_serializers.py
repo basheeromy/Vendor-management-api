@@ -11,15 +11,14 @@ class VendorSerializerTestCase(TestCase):
     """
         Unit test for vendor serializer.
     """
-    vendor_data ={
+    vendor_data = {
+        'email': 'testuser123@example.com',
         'name': 'test Vendor',
         'contact_details': 'email:tetvendor@example.com',
         'address': 'test address, street one, India',
         'vendor_code': '87654324',
-        'on_time_delivery_rate': 95.0,
-        'quality_rating_avg': 7.5,
-        'average_response_time': 4.3,
-        'fulfillment_rate': 89.5
+        'password': 'testpass123'
+
     }
 
     def test_vendor_serializer(self):
@@ -32,14 +31,30 @@ class VendorSerializerTestCase(TestCase):
 
         # Check all fields.
         serialized_data = serializer.data
-        self.assertEqual(serialized_data['name'], 'test Vendor')
-        self.assertEqual(serialized_data['contact_details'], 'email:tetvendor@example.com')
-        self.assertEqual(serialized_data['address'], 'test address, street one, India')
-        self.assertEqual(serialized_data['vendor_code'], '87654324')
-        self.assertEqual(serialized_data['on_time_delivery_rate'], 95.0)
-        self.assertEqual(serialized_data['quality_rating_avg'], 7.5)
-        self.assertEqual(serialized_data['average_response_time'], 4.3)
-        self.assertEqual(serialized_data['fulfillment_rate'], 89.5)
+        self.assertEqual(
+            serialized_data['email'],
+            'testuser123@example.com'
+        )
+        self.assertEqual(
+            serialized_data['name'],
+            'test Vendor'
+        )
+        self.assertEqual(
+            serialized_data['contact_details'],
+            'email:tetvendor@example.com'
+        )
+        self.assertEqual(
+            serialized_data['address'],
+            'test address, street one, India'
+        )
+        self.assertEqual(
+            serialized_data['vendor_code'],
+            '87654324'
+        )
+        self.assertNotIn(
+            'password',
+            serialized_data
+        )
 
     def test_vendor_serializer_invalid_data(self):
         """
@@ -51,3 +66,33 @@ class VendorSerializerTestCase(TestCase):
 
         serializer = VendorSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
+
+    def test_vendor_serializer_create_method(self):
+        """
+            Test create method in vendor serializer.
+        """
+        serializer = VendorSerializer()
+        vendor = serializer.create(self.vendor_data)
+        self.assertIsInstance(vendor, Vendor)
+
+    def test_vendor_serializer_update_method(self):
+        """
+            Test create method in vendor serializer.
+        """
+        serializer = VendorSerializer()
+        vendor = serializer.create(self.vendor_data)
+        data = {
+            'email': 'testuser123@example.com',
+            'name': 'name edited',
+            'password': '1234567'
+        }
+
+        updated_vendor = serializer.update(vendor, data)
+
+        self.assertEqual(
+            updated_vendor.name,
+            'name edited'
+        )
+
+        # Check updated password.
+        self.assertTrue(updated_vendor.check_password('1234567'))

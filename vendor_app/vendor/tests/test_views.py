@@ -8,6 +8,7 @@ from rest_framework.test import APIClient
 from vendor.models import Vendor
 from vendor.serializers import VendorSerializer
 
+
 class ListCreateVendorViewTest(TestCase):
     """
         Unit test for ListCreateVendorView.
@@ -19,15 +20,13 @@ class ListCreateVendorViewTest(TestCase):
         """
         self.client = APIClient()
         self.url = reverse('list-create-vendor')
-        self.vendor_data ={
+        self.vendor_data = {
+            'email': 'testvendor@example.com',
             'name': 'test Vendor',
-            'contact_details': 'email:tetvendor@example.com',
+            'contact_details': 'contactme',
             'address': 'test address, street one, India',
             'vendor_code': '87654378',
-            'on_time_delivery_rate': 95.0,
-            'quality_rating_avg': 7.5,
-            'average_response_time': 4.3,
-            'fulfillment_rate': 89.5
+            'password': 'testpass123'
         }
         self.vendor = Vendor.objects.create(**self.vendor_data)
 
@@ -48,14 +47,12 @@ class ListCreateVendorViewTest(TestCase):
         """
 
         new_vendor_data = {
+            'email': 'testvendor2@example.com',
             'name': 'test Vendor2',
-            'contact_details': 'email:tetvendor2@example.com',
+            'contact_details': 'contact me',
             'address': 'test address2, street one, India',
             'vendor_code': '876543782',
-            'on_time_delivery_rate': 95.0,
-            'quality_rating_avg': 7.5,
-            'average_response_time': 4.3,
-            'fulfillment_rate': 89.5
+            'password': 'testpass123'
         }
         response = self.client.post(self.url, new_vendor_data)
         self.assertEqual(response.status_code, 201)
@@ -75,16 +72,13 @@ class ManageVendorViewTest(TestCase):
             Setup data for testing.
         """
         self.client = APIClient()
-        self.url = reverse('list-create-vendor')
-        self.vendor_data ={
+        self.vendor_data = {
+            'email': 'testvendor@example.com',
             'name': 'test Vendor',
             'contact_details': 'email:tetvendor@example.com',
             'address': 'test address, street one, India',
             'vendor_code': '87654378',
-            'on_time_delivery_rate': 95.0,
-            'quality_rating_avg': 7.5,
-            'average_response_time': 4.3,
-            'fulfillment_rate': 89.5
+            'password': 'testpass1234'
         }
         self.vendor = Vendor.objects.create(**self.vendor_data)
         self.url = reverse('manage-vendor', kwargs={'id': self.vendor.id})
@@ -103,20 +97,20 @@ class ManageVendorViewTest(TestCase):
             Test PUT request to update a vendor
         """
         updated_data = {
+            'email': 'testvendor@example.com',
             'name': 'updated vendor',
             'contact_details': 'updated@example.com',
             'address': 'test address, street one, India',
             'vendor_code': '87654378',
-            'on_time_delivery_rate': 95.0,
-            'quality_rating_avg': 7.5,
-            'average_response_time': 4.3,
-            'fulfillment_rate': 89.5
+            'password': 'updatedpass321'
+
         }
         response = self.client.put(self.url, updated_data)
         self.assertEqual(response.status_code, 200)
         updated_vendor = Vendor.objects.get(id=self.vendor.id)
         self.assertEqual(updated_vendor.name, 'updated vendor')
         self.assertEqual(updated_vendor.contact_details, 'updated@example.com')
+        self.assertTrue(updated_vendor.check_password('updatedpass321'))
 
     def test_vendor_delete(self):
         """

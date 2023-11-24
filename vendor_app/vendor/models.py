@@ -50,6 +50,7 @@ class UserManager(BaseUserManager):
 
         fake = Faker()
         random_vendor_code = fake.numerify(text='########')
+        random_vendor_code = 'superuser'+random_vendor_code
         user = self.create_vendor(
             email,
             name,

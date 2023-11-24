@@ -22,8 +22,10 @@ from drf_spectacular.utils import extend_schema
 
 class ListCreateVendorView(ListCreateAPIView):
     """
-        List all vendors with get method,
-        Create new vendor with post method.
+        List All vendors with GET method.
+        Create a new vendor using POST method.
+        Ensure that the vendor_code field does not
+        commence with the keyword "superuser".
     """
     serializer_class = VendorSerializer
     # queryset = Vendor.objects.filter()

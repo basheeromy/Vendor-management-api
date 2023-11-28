@@ -5,8 +5,14 @@
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
-from vendor.models import Vendor
-from vendor.serializers import VendorSerializer
+from vendor.models import (
+    Vendor,
+    VendorPerformance
+)
+from vendor.serializers import (
+    VendorSerializer,
+    VendorPerformanceSerializer
+)
 
 
 class ListCreateVendorViewTest(TestCase):
@@ -170,3 +176,73 @@ class ManageVendorViewTest(TestCase):
 
         # check status code
         self.assertEqual(response.status_code, 200)
+
+
+class VendorPerformanceStatsViewTest(TestCase):
+    """
+        Unit test for VendorPerformanceStatsView.
+    """
+
+    def setUp(self):
+        """
+            Setup data for testing.
+        """
+        self.client = APIClient()
+        self.vendor_data = {
+            'email': 'testvendor@example.com',
+            'name': 'test Vendor',
+            'contact_details': 'email:tetvendor@example.com',
+            'address': 'test address, street one, India',
+            'vendor_code': '87654378',
+            'password': 'testpass1234'
+        }
+        input_data = {
+            "email": "testvendor@example.com",
+            "password": 'testpass1234'
+        }
+
+        # Create a vendor for testing.
+        create_vendor_url = reverse("list-create-vendor")
+        vendor_response = self.client.post(
+            create_vendor_url,
+            self.vendor_data
+        )
+        self.vendor = Vendor.objects.get(id = vendor_response.data['id'])
+
+        # generate access token
+        access_token_url = reverse('obtain-token-pair')
+        response = self.client.post(access_token_url, input_data)
+        self.accesstoken = response.json().get('access')
+        self.refresh_token = response.json().get('refresh')
+
+        self.url = reverse('vendor-performance', kwargs={'vendor': 1})
+        self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
+
+    def test_vendor_performance_retrieve(self):
+        """
+            Test GET request to retrieve a vendor
+        """
+        on_time_delivery_rate = 95.0
+        quality_rating_avg = 4.5
+        average_response_time = 2.3
+        fulfillment_rate = 98.0
+
+        perf_data = VendorPerformance.objects.create(
+            vendor=self.vendor,
+            on_time_delivery_rate=on_time_delivery_rate,
+            quality_rating_avg=quality_rating_avg,
+            average_response_time=average_response_time,
+            fulfillment_rate=fulfillment_rate,
+        )
+        # send get request.
+        response = self.client.get(self.url, headers=self.headers)
+        # print(response.json())  # to check errors. un comment this.
+
+        # check status code
+        self.assertEqual(response.status_code, 200)
+
+        # generate expected data
+        expected_data = VendorPerformanceSerializer(instance=perf_data).data
+
+        # compare expected data with response
+        self.assertEqual(response.data, expected_data)

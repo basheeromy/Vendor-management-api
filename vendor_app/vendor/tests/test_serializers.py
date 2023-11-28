@@ -6,7 +6,8 @@ from django.test import TestCase
 from vendor.models import Vendor
 from vendor.serializers import (
     VendorSerializer,
-    GenerateTokenSerializer
+    GenerateTokenSerializer,
+    VendorPerformanceSerializer
 )
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -164,3 +165,44 @@ class GenerateTokenSerializerTest(TestCase):
 
         serializer = GenerateTokenSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
+
+
+class VendorPerformanceSerializerTestCase(TestCase):
+    """
+        Unit test for vendor performance serializer.
+    """
+    def setUp(self):
+        # Create a test vendor
+
+        self.vendor_data = {
+            'email': 'testuser123@example.com',
+            'name': 'test Vendor',
+            'contact_details': 'email:tetvendor@example.com',
+            'address': 'test address, street one, India',
+            'vendor_code': '87654324',
+            'password': 'testpass123'
+        }
+
+        client = APIClient()
+        create_vendor_url = reverse("list-create-vendor")
+        self.vendor = client.post(
+            create_vendor_url,
+            self.vendor_data
+        )
+
+        self.performance_data = {
+            "vendor": 1,
+            "on_time_delivery_rate": 95.0,
+            "quality_rating_avg": 4.5,
+            "average_response_time": 2.3,
+            "fulfillment_rate": 98.0
+        }
+
+    def test_vendor_performance_serializer(self):
+        """
+            Test validation and serialization processes.
+        """
+        serializer = VendorPerformanceSerializer(
+            data=self.performance_data
+        )
+        self.assertTrue(serializer.is_valid())

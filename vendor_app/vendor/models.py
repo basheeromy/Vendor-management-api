@@ -94,7 +94,7 @@ class VendorPerformance(models.Model):
         data encompassing the performance indexes of vendors.
     """
     vendor = models.OneToOneField(Vendor, on_delete=models.CASCADE)
-    create_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     on_time_delivery_rate = models.FloatField(null=True, blank=True)
     quality_rating_avg = models.FloatField(null=True, blank=True)

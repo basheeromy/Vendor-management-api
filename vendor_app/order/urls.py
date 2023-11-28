@@ -3,7 +3,10 @@
 """
 
 from django.urls import path
-from .views import PurchaseOrderListCreateView
+from .views import (
+    PurchaseOrderListCreateView,
+    ManagePurchaseOrderView
+)
 
 
 urlpatterns = [
@@ -12,4 +15,9 @@ urlpatterns = [
         PurchaseOrderListCreateView.as_view(),
         name='list-create-purchase-order'
     ),
+    path(
+        '<str:id>',
+        ManagePurchaseOrderView.as_view(),
+        name='manage-purchase-order'
+    )
 ]

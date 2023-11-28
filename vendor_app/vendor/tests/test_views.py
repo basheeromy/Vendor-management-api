@@ -207,7 +207,7 @@ class VendorPerformanceStatsViewTest(TestCase):
             create_vendor_url,
             self.vendor_data
         )
-        self.vendor = Vendor.objects.get(id = vendor_response.data['id'])
+        self.vendor = Vendor.objects.get(id=vendor_response.data['id'])
 
         # generate access token
         access_token_url = reverse('obtain-token-pair')

@@ -75,10 +75,6 @@ class Vendor(AbstractBaseUser, PermissionsMixin):
     contact_details = models.TextField(null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     vendor_code = models.CharField(max_length=50, unique=True, blank=True)
-    on_time_delivery_rate = models.FloatField(null=True, blank=True)
-    quality_rating_avg = models.FloatField(null=True, blank=True)
-    average_response_time = models.FloatField(null=True, blank=True)
-    fulfillment_rate = models.FloatField(null=True, blank=True)
     is_seller = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -90,3 +86,20 @@ class Vendor(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.name
+
+
+class VendorPerformance(models.Model):
+    """
+        Model designed to oversee and record statistical
+        data encompassing the performance indexes of vendors.
+    """
+    vendor = models.OneToOneField(Vendor, on_delete=models.CASCADE)
+    create_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    on_time_delivery_rate = models.FloatField(null=True, blank=True)
+    quality_rating_avg = models.FloatField(null=True, blank=True)
+    average_response_time = models.FloatField(null=True, blank=True)
+    fulfillment_rate = models.FloatField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.vendor}'s performance data"

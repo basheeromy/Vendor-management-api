@@ -4,6 +4,7 @@
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from .models import VendorPerformance
 
 
 class VendorSerializer(serializers.ModelSerializer):
@@ -73,3 +74,13 @@ class GenerateTokenSerializer(serializers.Serializer):
             raise serializers.ValidationError("Incorrect Password.")
 
         return vendor
+
+
+class VendorPerformanceSerializer(serializers.ModelSerializer):
+    """
+        Serializer to provide statistic related
+        fields from vendor model
+    """
+    class Meta:
+        model = VendorPerformance
+        fields = '__all__'

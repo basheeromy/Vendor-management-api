@@ -4,13 +4,18 @@
 
 from .serializers import (
     VendorSerializer,
-    GenerateTokenSerializer
+    GenerateTokenSerializer,
+    VendorPerformanceSerializer
 )
-from .models import Vendor
+from .models import (
+    Vendor,
+    VendorPerformance
+)
 
 from rest_framework.generics import (
     ListCreateAPIView,
-    RetrieveUpdateDestroyAPIView
+    RetrieveUpdateDestroyAPIView,
+    RetrieveAPIView
 )
 from rest_framework import permissions
 from rest_framework.views import APIView
@@ -69,3 +74,16 @@ class GenerateTokenView(APIView):
                 'access': str(refresh.access_token),
             }
         )
+
+
+class VendorPerformanceStatsView(RetrieveAPIView):
+    """
+        View to get statistical data of a
+        Vendor's performance.
+    """
+
+    serializer_class = VendorPerformanceSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = VendorPerformance.objects.all()
+    lookup_field = 'vendor'

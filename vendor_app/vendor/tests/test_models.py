@@ -126,6 +126,8 @@ class VendorPerformanceModelTest(TestCase):
         quality_rating_avg = 4.5
         average_response_time = 2.3
         fulfillment_rate = 98.0
+        po_delivered = 10
+        po_deli_on_time = 5
 
         perf_data = VendorPerformance.objects.create(
             vendor=self.vendor,
@@ -133,6 +135,9 @@ class VendorPerformanceModelTest(TestCase):
             quality_rating_avg=quality_rating_avg,
             average_response_time=average_response_time,
             fulfillment_rate=fulfillment_rate,
+            po_delivered=po_delivered ,
+            po_deli_on_time=po_deli_on_time
+
         )
 
         self.assertEqual(
@@ -154,6 +159,14 @@ class VendorPerformanceModelTest(TestCase):
         self.assertEqual(
             perf_data.fulfillment_rate,
             fulfillment_rate
+        )
+        self.assertEqual(
+            perf_data.po_delivered,
+            po_delivered
+        )
+        self.assertEqual(
+            perf_data.po_deli_on_time,
+            po_deli_on_time
         )
 
         # Test VendorPerformance model's __str__ method.

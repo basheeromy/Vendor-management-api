@@ -100,6 +100,8 @@ class VendorPerformance(models.Model):
     quality_rating_avg = models.FloatField(null=True, blank=True)
     average_response_time = models.FloatField(null=True, blank=True)
     fulfillment_rate = models.FloatField(null=True, blank=True)
+    po_delivered = models.IntegerField(default=0)
+    po_deli_on_time = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.vendor}'s performance data"

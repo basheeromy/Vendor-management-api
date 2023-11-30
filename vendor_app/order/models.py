@@ -4,10 +4,16 @@
 
 from django.db import models
 from vendor.models import Vendor
+from django.db.models import Avg
+from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.core.validators import (
     MinValueValidator,
     MaxValueValidator
 )
+
+from vendor.models import VendorPerformance
 
 
 class PurchaseOrder(models.Model):
@@ -49,3 +55,29 @@ class PurchaseOrder(models.Model):
 
     def __str__(self):
         return f"PO: {self.po_number} Vendor: {self.vendor.name}"
+
+
+@receiver(post_save, sender=PurchaseOrder)
+def status_updated(sender, created, instance, **kwargs):
+    if not created:  # trigger only for updation.
+        if (instance.status == 'completed' and
+                instance.delivery_date is not None):
+            perf_ins = VendorPerformance.objects.filter(
+                vendor=instance.vendor
+            ).first()
+            perf_ins.po_delivered += 1
+
+            current_time = timezone.now()
+            if instance.delivery_date >= current_time:
+                perf_ins.po_deli_on_time += 1
+
+            perf_ins.on_time_delivery_rate = (
+                perf_ins.po_deli_on_time/perf_ins.po_delivered
+            )
+            if instance.quality_rating > 0:
+                quality_rating_avg = PurchaseOrder.objects.filter(
+                    vendor=instance.vendor,
+                    status='completed'
+                ).aggregate(avg_rating=Avg('quality_rating'))
+                perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
+            perf_ins.save()

@@ -135,7 +135,7 @@ class VendorPerformanceModelTest(TestCase):
             quality_rating_avg=quality_rating_avg,
             average_response_time=average_response_time,
             fulfillment_rate=fulfillment_rate,
-            po_delivered=po_delivered ,
+            po_delivered=po_delivered,
             po_deli_on_time=po_deli_on_time
 
         )

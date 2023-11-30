@@ -29,6 +29,8 @@ class PurchaseOrderListCreateView(ListCreateAPIView):
     """
     serializer_class = PurchaseOrderSerializer
     queryset = PurchaseOrder.objects.all()
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class ManagePurchaseOrderView(RetrieveUpdateDestroyAPIView):

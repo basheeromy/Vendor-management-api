@@ -47,15 +47,11 @@ class PurchaseOrderSerializerTestCase(TestCase):
         serializer = PurchaseOrderSerializer(data=self.purchase_order_data)
         self.assertTrue(serializer.is_valid())
 
-        # Check all fields
-        serialized_data = serializer.data
+        # Check fields
+        serialized_data = serializer.validated_data
         self.assertEqual(
             serialized_data['po_number'],
             'test-123-po'
-        )
-        self.assertEqual(
-            serialized_data['delivery_date'],
-            '2023-11-26T19:04:23.379000Z'
         )
         self.assertEqual(
             serialized_data['items'],
@@ -70,31 +66,23 @@ class PurchaseOrderSerializerTestCase(TestCase):
             5
         )
         self.assertEqual(
-            serialized_data['status'],
-            'pending'
-        )
-        self.assertEqual(
-            serialized_data['quality_rating'],
-            8.5
-        )
-        self.assertEqual(
-            serialized_data['issue_date'],
-            '2023-11-26T19:04:23.379000Z'
-        )
-        self.assertEqual(
-            serialized_data['acknowledgment_date'],
-            '2023-11-26T19:04:23.379000Z'
-        )
-        self.assertEqual(
             serialized_data['vendor'],
-            1
+            self.vendor
         )
+
+        # Check read only field excluded in creation.(writing.)
+        self.assertNotIn('status', serializer.validated_data)
+        self.assertNotIn('delivery_date', serializer.validated_data)
+        self.assertNotIn('quality_rating', serializer.validated_data)
+        self.assertNotIn('issue_date', serializer.validated_data)
+        self.assertNotIn('acknowledgment_date', serializer.validated_data)
+        self.assertNotIn('order_date', serializer.validated_data)
 
         # test with invalid data
         invalid_data = self.purchase_order_data.copy()
         invalid_data['quantity'] = -1
-        sserializer = PurchaseOrderSerializer(data=invalid_data)
-        self.assertFalse(sserializer.is_valid())
+        serializer = PurchaseOrderSerializer(data=invalid_data)
+        self.assertFalse(serializer.is_valid())
 
     def test_PO_serializer_create_update_methods(self):
         """

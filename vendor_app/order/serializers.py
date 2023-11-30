@@ -14,3 +14,23 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = PurchaseOrder
         fields = '__all__'
+        extra_kwargs = {
+            'order_date': {
+                'read_only': True
+            },
+            'delivery_date': {
+                'read_only': True
+            },
+            'status': {
+                'read_only': True
+            },
+            'quality_rating': {
+                'read_only': True
+            },
+            'issue_date': {
+                'read_only': True
+            },
+            'acknowledgment_date': {
+                'read_only': True
+            }
+        }

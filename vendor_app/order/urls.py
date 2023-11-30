@@ -5,7 +5,8 @@
 from django.urls import path
 from .views import (
     PurchaseOrderListCreateView,
-    ManagePurchaseOrderView
+    ManagePurchaseOrderView,
+    AcknowledgePOView
 )
 
 
@@ -19,5 +20,10 @@ urlpatterns = [
         '<str:id>',
         ManagePurchaseOrderView.as_view(),
         name='manage-purchase-order'
+    ),
+    path(
+        '<str:id>/acknowledge',
+        AcknowledgePOView.as_view(),
+        name='acknowledge-po'
     )
 ]

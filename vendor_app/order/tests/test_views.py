@@ -215,3 +215,81 @@ class ManagePurchaseOrderViewTest(TestCase):
             id=self.expected_data['id']
         ).first()
         self.assertIsNone(deleted_po)
+
+
+class AcknowledgePOViewTest(TestCase):
+    """
+        Unit test for AknowledgePOView.
+    """
+    def setUp(self):
+
+        self.client = APIClient()
+
+        # create vendor instance.
+        self.vendor_data = {
+            'email': 'testvendor@example.com',
+            'name': 'test Vendor',
+            'contact_details': 'email:tetvendor@example.com',
+            'address': 'test address, street one, India',
+            'vendor_code': '87654378',
+            'password': 'testpass1234'
+        }
+
+        create_vendor_url = reverse("list-create-vendor")
+        response = self.client.post(create_vendor_url, self.vendor_data)
+        self.vendor = Vendor.objects.get(id=1)
+
+        # generate access token
+        input_data = {
+            "email": "testvendor@example.com",
+            "password": 'testpass1234'
+        }
+        access_token_url = reverse('obtain-token-pair')
+        response = self.client.post(access_token_url, input_data)
+        self.accesstoken = response.json().get('access')
+        self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
+
+        # cofigure client
+        self.client = APIClient()
+
+        po_data = json.dumps({
+            "po_number": "test-124-po",
+            "items": {
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            "quantity": 5,
+            "vendor": 1
+        })
+        po_url = reverse('list-create-purchase-order')
+        response = self.client.post(
+            po_url,
+            po_data,
+            headers=self.headers,
+            content_type='application/json'
+        )
+        self.po_id = response.json()["id"]
+
+        # configure url and url params with headers.
+        self.url = reverse('acknowledge-po', kwargs={'id': self.po_id})
+
+    def test_acknowledgement(self):
+        # Send a PATCH request to acknowledge the Purchase Order
+        ackn_resp = self.client.patch(
+            self.url,
+            {},
+            headers=self.headers,
+            format='json'
+        )
+        self.assertEqual(ackn_resp.status_code, 200)
+        self.assertEqual(ackn_resp.json(), "Aknowledged Successfully")
+
+        # try to aknoledge again
+        second_resp = self.client.patch(
+            self.url,
+            {},
+            headers=self.headers,
+            format='json'
+        )
+        self.assertEqual(second_resp.json(), "Already acknowledged.")

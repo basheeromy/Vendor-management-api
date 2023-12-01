@@ -61,13 +61,13 @@ class PurchaseOrder(models.Model):
         return f"PO: {self.po_number} Vendor: {self.vendor.name}"
 
 
-
 @receiver(pre_save, sender=PurchaseOrder)
 def add_delivery_date(sender, instance, **kwargs):
     if instance._state.adding:
         current_time = timezone.now()
         date_in_10_days = current_time + timedelta(days=10)
         instance.delivery_date = date_in_10_days
+
 
 @receiver(post_save, sender=PurchaseOrder)
 def status_updated(sender, created, instance, **kwargs):

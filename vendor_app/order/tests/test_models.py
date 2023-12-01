@@ -71,7 +71,11 @@ class PurchaseOrderModelTest(TestCase):
             order_date.timestamp(),
             delta=1  # Tolerance in seconds for time comparison
         )
-        self.assertEqual(purchase_order.delivery_date, delivery_date)
+        self.assertAlmostEqual(
+            purchase_order.delivery_date.timestamp(),
+            delivery_date.timestamp(),
+            delta=1
+        )
         self.assertEqual(purchase_order.items, items)
         self.assertEqual(purchase_order.quantity, quantity)
         """

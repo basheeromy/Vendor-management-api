@@ -6,7 +6,11 @@ from django.db import models
 from vendor.models import Vendor
 from django.db.models import Avg
 from django.utils import timezone
-from django.db.models.signals import post_save
+from datetime import timedelta
+from django.db.models.signals import (
+    post_save,
+    pre_save
+)
 from django.dispatch import receiver
 from django.core.validators import (
     MinValueValidator,
@@ -56,6 +60,14 @@ class PurchaseOrder(models.Model):
     def __str__(self):
         return f"PO: {self.po_number} Vendor: {self.vendor.name}"
 
+
+
+@receiver(pre_save, sender=PurchaseOrder)
+def add_delivery_date(sender, instance, **kwargs):
+    if instance._state.adding:
+        current_time = timezone.now()
+        date_in_10_days = current_time + timedelta(days=10)
+        instance.delivery_date = date_in_10_days
 
 @receiver(post_save, sender=PurchaseOrder)
 def status_updated(sender, created, instance, **kwargs):

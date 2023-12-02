@@ -7,7 +7,10 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from order.models import PurchaseOrder
-from vendor.models import Vendor
+from vendor.models import (
+    Vendor,
+    VendorPerformance
+)
 
 from order.serializers import PurchaseOrderSerializer
 
@@ -273,6 +276,17 @@ class AcknowledgePOViewTest(TestCase):
 
         # configure url and url params with headers.
         self.url = reverse('acknowledge-po', kwargs={'id': self.po_id})
+
+        self.perf_data = VendorPerformance.objects.create(
+            vendor=self.vendor,
+            on_time_delivery_rate=0,
+            quality_rating_avg=0,
+            average_response_time=0,
+            fulfillment_rate=0,
+            po_delivered=10,
+            po_deli_on_time=5
+
+        )
 
     def test_acknowledgement(self):
         # Send a PATCH request to acknowledge the Purchase Order

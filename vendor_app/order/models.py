@@ -54,7 +54,11 @@ class PurchaseOrder(models.Model):
         ]
 
     )
-    issue_date = models.DateTimeField(null=True, blank=True)
+    issue_date = models.DateTimeField(
+        auto_now_add=True,
+        null=True,
+        blank=True
+    )
     acknowledgment_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
@@ -62,16 +66,34 @@ class PurchaseOrder(models.Model):
 
 
 @receiver(pre_save, sender=PurchaseOrder)
-def add_delivery_date(sender, instance, **kwargs):
+def update_stats(sender, instance, **kwargs):
     if instance._state.adding:
         current_time = timezone.now()
         date_in_10_days = current_time + timedelta(days=10)
         instance.delivery_date = date_in_10_days
 
+    if instance.id:
+        original_instance = PurchaseOrder.objects.get(id=instance.id)
+        if (original_instance.acknowledgment_date is None and
+                instance.acknowledgment_date is not None):
+            time_diff = (
+                instance.acknowledgment_date - original_instance.order_date
+            )
+            response_time = time_diff.days
+            perf_ins = VendorPerformance.objects.filter(
+                vendor=instance.vendor
+            ).first()
+            perf_ins.res_time_total += response_time
+            perf_ins.res_count += 1
+            perf_ins.average_response_time = perf_ins.res_time_total/perf_ins.res_count
+            perf_ins.save()
+
 
 @receiver(post_save, sender=PurchaseOrder)
 def status_updated(sender, created, instance, **kwargs):
     if not created:  # trigger only for updation.
+
+        # Set On time delivery rate.
         if (instance.status == 'completed' and
                 instance.delivery_date is not None):
             perf_ins = VendorPerformance.objects.filter(
@@ -86,6 +108,8 @@ def status_updated(sender, created, instance, **kwargs):
             perf_ins.on_time_delivery_rate = (
                 perf_ins.po_deli_on_time/perf_ins.po_delivered
             )
+
+            # Set quality rating average.
             if instance.quality_rating > 0:
                 quality_rating_avg = PurchaseOrder.objects.filter(
                     vendor=instance.vendor,

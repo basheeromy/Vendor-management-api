@@ -27,9 +27,6 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
             'quality_rating': {
                 'read_only': True
             },
-            'issue_date': {
-                'read_only': True
-            },
             'acknowledgment_date': {
                 'read_only': True
             }

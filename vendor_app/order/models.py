@@ -54,11 +54,6 @@ class PurchaseOrder(models.Model):
         ]
 
     )
-    issue_date = models.DateTimeField(
-        auto_now_add=True,
-        null=True,
-        blank=True
-    )
     acknowledgment_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
@@ -85,20 +80,33 @@ def update_stats(sender, instance, **kwargs):
             ).first()
             perf_ins.res_time_total += response_time
             perf_ins.res_count += 1
-            perf_ins.average_response_time = perf_ins.res_time_total/perf_ins.res_count
+            perf_ins.average_response_time = (
+                perf_ins.res_time_total/perf_ins.res_count
+            )
             perf_ins.save()
 
 
 @receiver(post_save, sender=PurchaseOrder)
 def status_updated(sender, created, instance, **kwargs):
-    if not created:  # trigger only for updation.
+    # print(instance.vendor)
+    perf_ins = VendorPerformance.objects.filter(
+                vendor=instance.vendor
+            ).first()
+
+    if created:
+        # Reset number of po issued.
+        # Assuming that all po's directly forwarded to
+        # vendor at the time of purchase order creation.
+        perf_ins.no_po_issued += 1
+        perf_ins.save()
+
+    elif not created:  # trigger only for updation.
 
         # Set On time delivery rate.
         if (instance.status == 'completed' and
                 instance.delivery_date is not None):
-            perf_ins = VendorPerformance.objects.filter(
-                vendor=instance.vendor
-            ).first()
+
+            # Calculate on time delivery rate
             perf_ins.po_delivered += 1
 
             current_time = timezone.now()
@@ -116,4 +124,10 @@ def status_updated(sender, created, instance, **kwargs):
                     status='completed'
                 ).aggregate(avg_rating=Avg('quality_rating'))
                 perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
+
+            # Set Fullfilment Rate.
+
+            perf_ins.fulfillment_rate = (
+                perf_ins.no_po_issued/perf_ins.po_delivered
+            )
             perf_ins.save()

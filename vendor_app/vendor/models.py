@@ -104,6 +104,7 @@ class VendorPerformance(models.Model):
     po_deli_on_time = models.IntegerField(default=0)
     res_time_total = models.IntegerField(default=0)
     res_count = models.IntegerField(default=0)
+    no_po_issued = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.vendor}'s performance data"

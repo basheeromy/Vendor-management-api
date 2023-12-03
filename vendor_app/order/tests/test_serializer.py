@@ -6,7 +6,10 @@ from django.test import TestCase
 
 from order.serializers import PurchaseOrderSerializer
 from order.models import PurchaseOrder
-from vendor.models import Vendor
+from vendor.models import (
+    Vendor,
+    VendorPerformance
+)
 
 
 class PurchaseOrderSerializerTestCase(TestCase):
@@ -35,10 +38,18 @@ class PurchaseOrderSerializerTestCase(TestCase):
             "quantity": 5,
             "status": "pending",
             "quality_rating": 8.5,
-            "issue_date": "2023-11-26T19:04:23.379000Z",
             "acknowledgment_date": "2023-11-26T19:04:23.379000Z",
             "vendor": 1
         }
+        self.perf_data = VendorPerformance.objects.create(
+            vendor=self.vendor,
+            on_time_delivery_rate=0,
+            quality_rating_avg=0,
+            average_response_time=0,
+            fulfillment_rate=0,
+            po_delivered=10,
+            po_deli_on_time=5
+        )
 
     def test_purchase_order_serilizer(self):
         """
@@ -74,7 +85,6 @@ class PurchaseOrderSerializerTestCase(TestCase):
         self.assertNotIn('status', serializer.validated_data)
         self.assertNotIn('delivery_date', serializer.validated_data)
         self.assertNotIn('quality_rating', serializer.validated_data)
-        self.assertNotIn('issue_date', serializer.validated_data)
         self.assertNotIn('acknowledgment_date', serializer.validated_data)
         self.assertNotIn('order_date', serializer.validated_data)
 

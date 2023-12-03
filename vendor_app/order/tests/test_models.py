@@ -6,7 +6,10 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 
 from order.models import PurchaseOrder
-from vendor.models import Vendor
+from vendor.models import (
+    Vendor,
+    VendorPerformance
+)
 
 import json
 
@@ -27,16 +30,27 @@ class PurchaseOrderModelTest(TestCase):
             password='testpass123'
         )
         test_data = {
-           "item1": {
-               "product_id": "pr1",
-               "quantity": 20,
+            "item1": {
+                "product_id": "pr1",
+                "quantity": 20,
             },
-           "item2": {
-               "product_id": "pr2",
-               "quantity": 10,
-           }
+            "item2": {
+                "product_id": "pr2",
+                "quantity": 10,
+            }
         }
         self.json_data = json.dumps(test_data)
+
+        self.perf_data = VendorPerformance.objects.create(
+            vendor=self.vendor,
+            on_time_delivery_rate=0,
+            quality_rating_avg=0,
+            average_response_time=0,
+            fulfillment_rate=0,
+            po_delivered=10,
+            po_deli_on_time=5
+
+        )
 
     def test_create_purchase_order(self):
         """
@@ -60,7 +74,6 @@ class PurchaseOrderModelTest(TestCase):
             items=items,
             quantity=quantity,
             quality_rating=8.5,
-            issue_date=now,
             acknowledgment_date=now
         )
         self.assertEqual(purchase_order.po_number, po_number)

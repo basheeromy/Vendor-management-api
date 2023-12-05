@@ -7,8 +7,7 @@ from django.test import TestCase
 from order.serializers import PurchaseOrderSerializer
 from order.models import PurchaseOrder
 from vendor.models import (
-    Vendor,
-    VendorPerformance
+    Vendor
 )
 
 
@@ -41,15 +40,6 @@ class PurchaseOrderSerializerTestCase(TestCase):
             "acknowledgment_date": "2023-11-26T19:04:23.379000Z",
             "vendor": 1
         }
-        self.perf_data = VendorPerformance.objects.create(
-            vendor=self.vendor,
-            on_time_delivery_rate=0,
-            quality_rating_avg=0,
-            average_response_time=0,
-            fulfillment_rate=0,
-            po_delivered=10,
-            po_deli_on_time=5
-        )
 
     def test_purchase_order_serilizer(self):
         """

@@ -8,8 +8,7 @@ from rest_framework.test import APIClient
 
 from order.models import PurchaseOrder
 from vendor.models import (
-    Vendor,
-    VendorPerformance
+    Vendor
 )
 
 from order.serializers import PurchaseOrderSerializer
@@ -40,17 +39,8 @@ class PurchaseOrderListCreateViewTest(TestCase):
 
         create_vendor_url = reverse("list-create-vendor")
         response = self.client.post(create_vendor_url, self.vendor_data)
-        self.vendor = Vendor.objects.get(id=1)
-
-        self.perf_data = VendorPerformance.objects.create(
-            vendor=self.vendor,
-            on_time_delivery_rate=0,
-            quality_rating_avg=0,
-            average_response_time=0,
-            fulfillment_rate=0,
-            po_delivered=10,
-            po_deli_on_time=5
-        )
+        id = response.json()['id']
+        self.vendor = Vendor.objects.get(id=id)
 
         # generate access token
         input_data = {
@@ -149,16 +139,6 @@ class ManagePurchaseOrderViewTest(TestCase):
         create_vendor_url = reverse("list-create-vendor")
         response = self.client.post(create_vendor_url, self.vendor_data)
         self.vendor = Vendor.objects.get(id=1)
-
-        self.perf_data = VendorPerformance.objects.create(
-            vendor=self.vendor,
-            on_time_delivery_rate=0,
-            quality_rating_avg=0,
-            average_response_time=0,
-            fulfillment_rate=0,
-            po_delivered=10,
-            po_deli_on_time=5
-        )
 
         # Create pruchase order instance
         self.purchase_order_data = {
@@ -261,16 +241,6 @@ class AcknowledgePOViewTest(TestCase):
         create_vendor_url = reverse("list-create-vendor")
         response = self.client.post(create_vendor_url, self.vendor_data)
         self.vendor = Vendor.objects.get(id=1)
-
-        self.perf_data = VendorPerformance.objects.create(
-            vendor=self.vendor,
-            on_time_delivery_rate=0,
-            quality_rating_avg=0,
-            average_response_time=0,
-            fulfillment_rate=0,
-            po_delivered=10,
-            po_deli_on_time=5
-        )
 
         # generate access token
         input_data = {

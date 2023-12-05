@@ -7,8 +7,7 @@ from django.core.exceptions import ValidationError
 
 from order.models import PurchaseOrder
 from vendor.models import (
-    Vendor,
-    VendorPerformance
+    Vendor
 )
 
 import json
@@ -40,17 +39,6 @@ class PurchaseOrderModelTest(TestCase):
             }
         }
         self.json_data = json.dumps(test_data)
-
-        self.perf_data = VendorPerformance.objects.create(
-            vendor=self.vendor,
-            on_time_delivery_rate=0,
-            quality_rating_avg=0,
-            average_response_time=0,
-            fulfillment_rate=0,
-            po_delivered=10,
-            po_deli_on_time=5
-
-        )
 
     def test_create_purchase_order(self):
         """

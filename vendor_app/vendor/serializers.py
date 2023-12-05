@@ -84,3 +84,20 @@ class VendorPerformanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = VendorPerformance
         fields = '__all__'
+        extra_kwargs = {
+            'po_delivered': {
+                'write_only': True
+            },
+            'po_deli_on_time': {
+                'write_only': True
+            },
+            'res_time_total': {
+                'write_only': True
+            },
+            'res_count': {
+                'write_only': True
+            },
+            'no_po_issued': {
+                'write_only': True
+            },
+        }

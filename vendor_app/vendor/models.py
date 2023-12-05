@@ -9,6 +9,12 @@ from django.contrib.auth.models import (
     PermissionsMixin,
 )
 from faker import Faker
+from django.contrib.auth import get_user_model
+
+from django.db.models.signals import (
+    post_save
+)
+from django.dispatch import receiver
 
 
 class UserManager(BaseUserManager):
@@ -108,3 +114,16 @@ class VendorPerformance(models.Model):
 
     def __str__(self):
         return f"{self.vendor}'s performance data"
+
+
+@receiver(post_save, sender=Vendor)
+def create_performance_instance(sender, created, instance, **kwargs):
+    """
+        Create a new performance table instance for the
+        created vendor.
+    """
+    if created:
+        vendor = get_user_model().objects.get(id=instance.id)
+        VendorPerformance.objects.create(
+            vendor=vendor
+        )

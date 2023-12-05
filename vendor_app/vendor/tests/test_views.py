@@ -222,18 +222,11 @@ class VendorPerformanceStatsViewTest(TestCase):
         """
             Test GET request to retrieve a vendor
         """
-        on_time_delivery_rate = 95.0
-        quality_rating_avg = 4.5
-        average_response_time = 2.3
-        fulfillment_rate = 98.0
 
-        perf_data = VendorPerformance.objects.create(
-            vendor=self.vendor,
-            on_time_delivery_rate=on_time_delivery_rate,
-            quality_rating_avg=quality_rating_avg,
-            average_response_time=average_response_time,
-            fulfillment_rate=fulfillment_rate,
-        )
+        perf_data = VendorPerformance.objects.filter(
+            vendor=self.vendor
+        ).first()
+
         # send get request.
         response = self.client.get(self.url, headers=self.headers)
         # print(response.json())  # to check errors. un comment this.
@@ -242,6 +235,7 @@ class VendorPerformanceStatsViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # generate expected data
+        # Use serializer to exclue write only fields.
         expected_data = VendorPerformanceSerializer(instance=perf_data).data
 
         # compare expected data with response

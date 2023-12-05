@@ -11,6 +11,7 @@ from vendor.serializers import (
 )
 from django.urls import reverse
 from rest_framework.test import APIClient
+from vendor.models import VendorPerformance
 
 
 class VendorSerializerTestCase(TestCase):
@@ -188,21 +189,25 @@ class VendorPerformanceSerializerTestCase(TestCase):
         self.vendor = client.post(
             create_vendor_url,
             self.vendor_data
-        )
+        ).json()
 
-        self.performance_data = {
-            "vendor": 1,
-            "on_time_delivery_rate": 95.0,
-            "quality_rating_avg": 4.5,
-            "average_response_time": 2.3,
-            "fulfillment_rate": 98.0
-        }
+        self.perf_inst = VendorPerformance.objects.filter(
+            vendor=self.vendor['id']).first()
 
     def test_vendor_performance_serializer(self):
         """
-            Test validation and serialization processes.
+            Test the retrieval process with the serializer.
         """
         serializer = VendorPerformanceSerializer(
-            data=self.performance_data
+            instance=self.perf_inst
         )
-        self.assertTrue(serializer.is_valid())
+
+        # Test serializer returned data.
+        self.assertEqual(serializer.data['id'], self.vendor['id'])
+
+        # Test serializer excludes write only fields.
+        self.assertNotIn('po_delivered', serializer.data)
+        self.assertNotIn('po_deli_on_time', serializer.data)
+        self.assertNotIn('res_time_total', serializer.data)
+        self.assertNotIn('res_count', serializer.data)
+        self.assertNotIn('no_po_issued', serializer.data)

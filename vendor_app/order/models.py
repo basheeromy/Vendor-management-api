@@ -61,12 +61,14 @@ class PurchaseOrder(models.Model):
 
 
 @receiver(pre_save, sender=PurchaseOrder)
-def update_stats(sender, instance, **kwargs):
+def update_stats_pre_save(sender, instance, **kwargs):
+    # Set delivery date.
     if instance._state.adding:
         current_time = timezone.now()
         date_in_10_days = current_time + timedelta(days=10)
         instance.delivery_date = date_in_10_days
 
+    # Set average response time.
     if instance.id:
         original_instance = PurchaseOrder.objects.get(id=instance.id)
         if (original_instance.acknowledgment_date is None and
@@ -74,7 +76,8 @@ def update_stats(sender, instance, **kwargs):
             time_diff = (
                 instance.acknowledgment_date - original_instance.order_date
             )
-            response_time = time_diff.days
+            # +1 is to adjust the one day difference.
+            response_time = time_diff.days + 1
             perf_ins = VendorPerformance.objects.filter(
                 vendor=instance.vendor
             ).first()
@@ -87,7 +90,7 @@ def update_stats(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=PurchaseOrder)
-def status_updated(sender, created, instance, **kwargs):
+def update_stats_post_save(sender, created, instance, **kwargs):
     # print(instance.vendor)
     perf_ins = VendorPerformance.objects.filter(
                 vendor=instance.vendor
@@ -106,7 +109,7 @@ def status_updated(sender, created, instance, **kwargs):
         if (instance.status == 'completed' and
                 instance.delivery_date is not None):
 
-            # Calculate on time delivery rate
+            # Calculate on time delivery rate.
             perf_ins.po_delivered += 1
 
             current_time = timezone.now()

@@ -76,8 +76,7 @@ def update_stats_pre_save(sender, instance, **kwargs):
             time_diff = (
                 instance.acknowledgment_date - original_instance.order_date
             )
-            # +1 is to adjust the one day difference.
-            response_time = time_diff.days + 1
+            response_time = time_diff.days
             perf_ins = VendorPerformance.objects.filter(
                 vendor=instance.vendor
             ).first()

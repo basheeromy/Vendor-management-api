@@ -30,16 +30,8 @@ class TestPurchaseOrderSignals(TestCase):
             password='testpass123'
         )
 
-    def test_update_stats_pre_save(self):
-
-        # Set order dates for two orders.
-        acknow_date_1 = timezone.now() + timedelta(days=2)
-        acknow_date_2 = timezone.now() + timedelta(days=4)
-
-        expected_avg_resp_time = 3.0   # (2+4)/2 = 3
-
         # Set purchase order 1
-        purchase_order1 = PurchaseOrder.objects.create(
+        self.purchase_order1 = PurchaseOrder.objects.create(
             po_number="test-123-po",
             items={
                 "testProp1": "test_string",
@@ -50,22 +42,8 @@ class TestPurchaseOrderSignals(TestCase):
             vendor=self.vendor
         )
 
-        # Set to 10 days from now.pwd
-        expected_delivery_date = timezone.now() + timedelta(days=10)
-
-        # Test Setting of Delivery date.
-        self.assertAlmostEqual(
-            purchase_order1.delivery_date.timestamp(),
-            expected_delivery_date.timestamp(),
-            delta=1  # Tolerance in seconds for time comparison
-        )
-
-        # Set aknowledgement_date for po 1
-        purchase_order1.acknowledgment_date = acknow_date_1
-        purchase_order1.save()
-
         # Set purchase order 2
-        purchase_order2 = PurchaseOrder.objects.create(
+        self.purchase_order2 = PurchaseOrder.objects.create(
             po_number="test-124-po",
             items={
                 "testProp1": "test_string",
@@ -76,9 +54,32 @@ class TestPurchaseOrderSignals(TestCase):
             vendor=self.vendor
         )
 
+    def test_update_stats_pre_save(self):
+        """
+            Test pre save signals.
+        """
+
+        # Set order dates for two orders.
+        acknow_date_1 = timezone.now() + timedelta(days=2)
+        acknow_date_2 = timezone.now() + timedelta(days=4)
+
+        # Set to 10 days from now.
+        expected_delivery_date = timezone.now() + timedelta(days=10)
+
+        # Test Setting of Delivery date.
+        self.assertAlmostEqual(
+            self.purchase_order1.delivery_date.timestamp(),
+            expected_delivery_date.timestamp(),
+            delta=1  # Tolerance in seconds for time comparison
+        )
+
+        # Set aknowledgement_date for po 1
+        self.purchase_order1.acknowledgment_date = acknow_date_1
+        self.purchase_order1.save()
+
         # Set aknowledgement_date for po 2
-        purchase_order2.acknowledgment_date = acknow_date_2
-        purchase_order2.save()
+        self.purchase_order2.acknowledgment_date = acknow_date_2
+        self.purchase_order2.save()
 
         # Access performance data of vendor
         perf_ins = VendorPerformance.objects.filter(
@@ -87,6 +88,9 @@ class TestPurchaseOrderSignals(TestCase):
 
         # Access average response time.
         avg_resp_time = perf_ins.average_response_time
+
+        # Expected average response time.
+        expected_avg_resp_time = 3.0   # (2+4)/2 = 3
 
         self.assertEqual(
             avg_resp_time,

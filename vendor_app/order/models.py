@@ -120,16 +120,17 @@ def update_stats_post_save(sender, created, instance, **kwargs):
             )
 
             # Set quality rating average.
-            if instance.quality_rating > 0:
+            if (instance.quality_rating is not None and
+                    instance.quality_rating > 0):
                 quality_rating_avg = PurchaseOrder.objects.filter(
                     vendor=instance.vendor,
                     status='completed'
                 ).aggregate(avg_rating=Avg('quality_rating'))
                 perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
 
-            # Set Fullfilment Rate.
+            # Set Fullfillment Rate.
 
             perf_ins.fulfillment_rate = (
-                perf_ins.no_po_issued/perf_ins.po_delivered
+                perf_ins.po_delivered/perf_ins.no_po_issued
             )
             perf_ins.save()

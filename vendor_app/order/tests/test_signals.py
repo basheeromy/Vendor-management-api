@@ -53,13 +53,24 @@ class TestPurchaseOrderSignals(TestCase):
             quantity=5,
             vendor=self.vendor
         )
+        # Set purchase order 3
+        self.purchase_order3 = PurchaseOrder.objects.create(
+            po_number="test-125-po",
+            items={
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            quantity=5,
+            vendor=self.vendor
+        )
 
     def test_update_stats_pre_save(self):
         """
             Test pre save signals.
         """
 
-        # Set order dates for two orders.
+        # Set acknowledgment dates for two orders.
         acknow_date_1 = timezone.now() + timedelta(days=2)
         acknow_date_2 = timezone.now() + timedelta(days=4)
 
@@ -73,11 +84,11 @@ class TestPurchaseOrderSignals(TestCase):
             delta=1  # Tolerance in seconds for time comparison
         )
 
-        # Set aknowledgement_date for po 1
+        # Set aknowledgment_date for po 1
         self.purchase_order1.acknowledgment_date = acknow_date_1
         self.purchase_order1.save()
 
-        # Set aknowledgement_date for po 2
+        # Set aknowledgment_date for po 2
         self.purchase_order2.acknowledgment_date = acknow_date_2
         self.purchase_order2.save()
 
@@ -95,4 +106,63 @@ class TestPurchaseOrderSignals(TestCase):
         self.assertEqual(
             avg_resp_time,
             expected_avg_resp_time
+        )
+
+    def test_update_stats_post_save(self):
+        """
+            Test post save signals.
+        """
+
+        # Access performance data of vendor
+        perf_ins = VendorPerformance.objects.filter(
+                vendor=self.vendor
+            ).first()
+
+        # Test resetting of no_po_issued (3, check setUp.)
+        self.assertEqual(
+            perf_ins.no_po_issued,
+            3
+        )
+
+        # Set values to trigger signals for po 1
+        self.purchase_order1.status = 'completed'
+        self.purchase_order1.quality_rating = 8
+        self.purchase_order1.save()
+
+        # Set values to trigger signals for po 2
+        self.purchase_order2.status = 'completed'
+        self.purchase_order2.quality_rating = 4
+        self.purchase_order2.save()
+
+        # Access updated performance data of vendor
+        perf_ins = VendorPerformance.objects.filter(
+                vendor=self.vendor
+            ).first()
+
+        # Set expected on time delivery rate.
+        expected_ontime_del_rate = 1.0  # 100%
+
+        # Set expected quality rating average.
+        expected_quality_rate_avg = 6.0
+
+        # Test on time delivery rate
+        self.assertEqual(
+            perf_ins.on_time_delivery_rate,
+            expected_ontime_del_rate
+        )
+
+        # Test on quality rating average.
+        self.assertEqual(
+            perf_ins.quality_rating_avg,
+            expected_quality_rate_avg
+        )
+
+        # Set expected Fullfillment rate.
+        # 2/3 = 0.66 and rounded to 6.7 as
+        # we are using round method.
+        expected_fullfillment_rate = 0.67
+
+        self.assertEqual(
+            round(perf_ins.fulfillment_rate, 2),
+            expected_fullfillment_rate
         )

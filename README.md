@@ -27,15 +27,31 @@ Feel free to use this API to manage vendors efficiently!
 
 Packages used.
 
-Django==4.2.7
-django-cors-headers==4.3.1
-django-debug-toolbar==4.2.0
-django-filter==23.4
-djangorestframework==3.14.0
-djangorestframework-simplejwt==5.3.0
-drf-spectacular==0.26.5
-Faker==20.1.0
-flake8==6.1.0
+Django==4.2.7,
+
+django-cors-headers==4.3.1,
+
+django-debug-toolbar==4.2.0,
+
+django-filter==23.4,
+
+djangorestframework==3.14.0,
+
+djangorestframework-simplejwt==5.3.0,
+
+drf-spectacular==0.26.5,
+
+Faker==20.1.0,
+
+flake8==6.1.0,
+
 python-dotenv==1.0.0
 
-![Getting Started](./images/swagger.png)
+
+
+
+Order Related API endpoints.
+![Swagger_Order](./images/swagger.png)
+
+Vendor Related API endpoints.
+![Swagger_Vendor](./images/swagger2.png)

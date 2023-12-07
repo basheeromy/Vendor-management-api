@@ -85,33 +85,49 @@ class MarkCompletedView(APIView):
     serializer_class = PO_CompleteSerializer
 
     def patch(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
 
-        # Access url parameters.
-        id = kwargs.get('id')
+        if serializer.is_valid():
+            # Access url parameters.
+            id = kwargs.get('id')
+            # Purchase Order object.
+            obj = get_object_or_404(PurchaseOrder, id=id)
 
-        # Purchase Order object.
-        obj = get_object_or_404(PurchaseOrder, id=id)
+            # Check the order is acknowledged or not
+            if obj.acknowledgment_date is None:
+                return Response(
+                    "Order not yet acknowledged.",
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-        # Check the order is acknowledged or not
-        if obj.acknowledgment_date is None:
-            return Response(
-                "Order not yet acknowledged.",
-                status=status.HTTP_403_FORBIDDEN
-            )
+            # Mark as completed.
+            if obj.status != 'completed':
+                obj.status = 'completed'
+                if request.data and request.data['quality_rating']:
+                    obj.quality_rating = int(request.data['quality_rating'])
+                    obj.save()
 
-        # Mark as completed.
-        if obj.status != 'completed':
-            obj.status = 'completed'
-            if request.data['quality_rating']:
-                obj.quality_rating = int(request.data['quality_rating'])
-            obj.save()
+                    return Response(
+                            "Purchase order marked as "
+                            "completed with quality rating.",
+                            status=status.HTTP_200_OK
+                    )
+                else:
+                    obj.save()
 
-            return Response(
-                    "Successful.",
-                    status=status.HTTP_200_OK
-            )
+                    return Response(
+                        "Purchase order marked as "
+                        "completed without quality rating.",
+                        status=status.HTTP_200_OK
+                    )
+
+            else:
+                return Response(
+                            "Already updated.",
+                            status=status.HTTP_200_OK
+                    )
         else:
             return Response(
-                        "Already updated.",
-                        status=status.HTTP_200_OK
-                )
+                "Data validation failed.",
+                status=status.HTTP_400_BAD_REQUEST
+            )

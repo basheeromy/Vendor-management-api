@@ -27,7 +27,7 @@ class PurchaseOrderListCreateViewTest(TestCase):
         """
         self.client = APIClient()
 
-        # create vendor instance.
+        # Create vendor instance.
         self.vendor_data = {
             'email': 'testvendor@example.com',
             'name': 'test Vendor',
@@ -42,19 +42,19 @@ class PurchaseOrderListCreateViewTest(TestCase):
         id = response.json()['id']
         self.vendor = Vendor.objects.get(id=id)
 
-        # generate access token
+        # Generate access token
         input_data = {
             "email": "testvendor@example.com",
             "password": 'testpass1234'
         }
         access_token_url = reverse('obtain-token-pair')
         response = self.client.post(access_token_url, input_data)
-        self.accesstoken = response.json().get('access')
+        self.access_token = response.json().get('access')
 
-        # cofigure url with token.
+        # Configure url with token.
         self.client = APIClient()
         self.url = reverse('list-create-purchase-order')
-        self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
+        self.headers = {'Authorization': f'Bearer {self.access_token}'}
 
         self.purchase_order_data = {
             "po_number": "test-123-po",
@@ -114,7 +114,7 @@ class PurchaseOrderListCreateViewTest(TestCase):
 
 class ManagePurchaseOrderViewTest(TestCase):
     """
-        Unit test for ManagePurchaseOrderrView.
+        Unit test for ManagePurchaseOrderView.
     """
 
     def setUp(self):
@@ -135,12 +135,12 @@ class ManagePurchaseOrderViewTest(TestCase):
             "email": "testvendor@example.com",
             "password": 'testpass1234'
         }
-        # create vendor instance.
+        # Create vendor instance.
         create_vendor_url = reverse("list-create-vendor")
         response = self.client.post(create_vendor_url, self.vendor_data)
         self.vendor = Vendor.objects.get(id=1)
 
-        # Create pruchase order instance
+        # Create purchase order instance
         self.purchase_order_data = {
             "po_number": "test-123-po",
             "items": {
@@ -155,17 +155,17 @@ class ManagePurchaseOrderViewTest(TestCase):
             **self.purchase_order_data
         )
 
-        # generate expected data
+        # Generate expected data
         self.expected_data = PurchaseOrderSerializer(
             instance=self.purchase_order
         ).data
 
-        # generate access token
+        # Generate access token
         access_token_url = reverse('obtain-token-pair')
         response = self.client.post(access_token_url, input_data)
         self.accesstoken = response.json().get('access')
 
-        # cofigure url with token.
+        # Configure url with token.
         self.client = APIClient()
         self.url = reverse('manage-purchase-order', kwargs={'id': 1})
         self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
@@ -174,13 +174,13 @@ class ManagePurchaseOrderViewTest(TestCase):
         """
             Test GET request to retrieve a purchase order with id.
         """
-        # send get request.
+        # Send get request.
         response = self.client.get(self.url, headers=self.headers)
 
-        # check status code
+        # Check status code
         self.assertEqual(response.status_code, 200)
 
-        # compare expected data with response
+        # Compare expected data with response
         self.assertEqual(response.data, self.expected_data)
 
     def test_purchase_order_update(self):
@@ -222,13 +222,13 @@ class ManagePurchaseOrderViewTest(TestCase):
 
 class AcknowledgePOViewTest(TestCase):
     """
-        Unit test for AknowledgePOView.
+        Unit test for AcknowledgePOView.
     """
     def setUp(self):
 
         self.client = APIClient()
 
-        # create vendor instance.
+        # Create vendor instance.
         self.vendor_data = {
             'email': 'testvendor@example.com',
             'name': 'test Vendor',
@@ -242,18 +242,15 @@ class AcknowledgePOViewTest(TestCase):
         response = self.client.post(create_vendor_url, self.vendor_data)
         self.vendor = Vendor.objects.get(id=1)
 
-        # generate access token
+        # Generate access token
         input_data = {
             "email": "testvendor@example.com",
             "password": 'testpass1234'
         }
         access_token_url = reverse('obtain-token-pair')
         response = self.client.post(access_token_url, input_data)
-        self.accesstoken = response.json().get('access')
-        self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
-
-        # cofigure client
-        self.client = APIClient()
+        self.access_token = response.json().get('access')
+        self.headers = {'Authorization': f'Bearer {self.access_token}'}
 
         po_data = json.dumps({
             "po_number": "test-124-po",
@@ -274,7 +271,7 @@ class AcknowledgePOViewTest(TestCase):
         )
         self.po_id = response.json()["id"]
 
-        # configure url and url params with headers.
+        # Configure url and url params with headers.
         self.url = reverse('acknowledge-po', kwargs={'id': self.po_id})
 
     def test_acknowledgement(self):
@@ -286,9 +283,9 @@ class AcknowledgePOViewTest(TestCase):
             format='json'
         )
         self.assertEqual(ackn_resp.status_code, 200)
-        self.assertEqual(ackn_resp.json(), "Aknowledged Successfully")
+        self.assertEqual(ackn_resp.json(), "Acknowledged Successfully")
 
-        # try to aknoledge again
+        # Try to acknowledge again
         second_resp = self.client.patch(
             self.url,
             {},
@@ -296,3 +293,86 @@ class AcknowledgePOViewTest(TestCase):
             format='json'
         )
         self.assertEqual(second_resp.json(), "Already acknowledged.")
+
+
+class MarkCompletedViewTest(TestCase):
+    """
+        Unit test for AcknowledgePOView.
+    """
+    def setUp(self):
+
+        self.client = APIClient()
+
+        # Create vendor instance.
+        self.vendor_data = {
+            'email': 'testvendor@example.com',
+            'name': 'test Vendor',
+            'contact_details': 'email:tetvendor@example.com',
+            'address': 'test address, street one, India',
+            'vendor_code': '87654378',
+            'password': 'testpass1234'
+        }
+
+        create_vendor_url = reverse("list-create-vendor")
+        response = self.client.post(create_vendor_url, self.vendor_data)
+        self.vendor = Vendor.objects.get(id=1)
+
+        # Generate access token
+        input_data = {
+            "email": "testvendor@example.com",
+            "password": 'testpass1234'
+        }
+        access_token_url = reverse('obtain-token-pair')
+        response = self.client.post(access_token_url, input_data)
+        self.access_token = response.json().get('access')
+        self.headers = {'Authorization': f'Bearer {self.access_token}'}
+
+        po_data = json.dumps({
+            "po_number": "test-124-po",
+            "items": {
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            "quantity": 5,
+            "vendor": 1
+        })
+        po_url = reverse('list-create-purchase-order')
+        res = self.client.post(
+            po_url,
+            po_data,
+            headers=self.headers,
+            content_type='application/json'
+        )
+        self.po_id = res.json()["id"]
+
+        ack_url = reverse('acknowledge-po', kwargs={'id': self.po_id})
+
+        self.client.patch(
+            ack_url,
+            {},
+            headers=self.headers,
+            format='json'
+        )
+
+        # Configure url and url params with headers.
+        self.url = reverse(
+            'mark-completed',
+            kwargs={'id': self.po_id}
+        )
+
+    def test_patch_method(self):
+        """
+            Test view functioning.
+        """
+        response = self.client.patch(
+            self.url,
+            {
+                "quality_rating": 8
+            },
+            headers=self.headers,
+            format='json'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), "Successful.")

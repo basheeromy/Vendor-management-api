@@ -84,11 +84,11 @@ class TestPurchaseOrderSignals(TestCase):
             delta=1  # Tolerance in seconds for time comparison
         )
 
-        # Set aknowledgment_date for po 1
+        # Set acknowledgment_date for po 1
         self.purchase_order1.acknowledgment_date = acknow_date_1
         self.purchase_order1.save()
 
-        # Set aknowledgment_date for po 2
+        # Set acknowledgment_date for po 2
         self.purchase_order2.acknowledgment_date = acknow_date_2
         self.purchase_order2.save()
 
@@ -140,7 +140,7 @@ class TestPurchaseOrderSignals(TestCase):
             ).first()
 
         # Set expected on time delivery rate.
-        expected_ontime_del_rate = 1.0  # 100%
+        expected_on_time_del_rate = 1.0  # 100%
 
         # Set expected quality rating average.
         expected_quality_rate_avg = 6.0
@@ -148,7 +148,7 @@ class TestPurchaseOrderSignals(TestCase):
         # Test on time delivery rate
         self.assertEqual(
             perf_ins.on_time_delivery_rate,
-            expected_ontime_del_rate
+            expected_on_time_del_rate
         )
 
         # Test on quality rating average.
@@ -157,12 +157,12 @@ class TestPurchaseOrderSignals(TestCase):
             expected_quality_rate_avg
         )
 
-        # Set expected Fullfillment rate.
+        # Set expected Fulfillment rate.
         # 2/3 = 0.66 and rounded to 6.7 as
         # we are using round method.
-        expected_fullfillment_rate = 0.67
+        expected_fulfillment_rate = 0.67
 
         self.assertEqual(
             round(perf_ins.fulfillment_rate, 2),
-            expected_fullfillment_rate
+            expected_fulfillment_rate
         )

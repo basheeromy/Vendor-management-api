@@ -1,5 +1,5 @@
 """
-    Test cases for serilizers.
+    Test cases for serializers.
 """
 
 from django.test import TestCase
@@ -66,7 +66,7 @@ class VendorSerializerTestCase(TestCase):
         """
             Test invalid data fails validation
         """
-        # create invalid data for testing
+        # Create invalid data for testing
         invalid_data = self.vendor_data.copy()
         invalid_data.pop('name')
 

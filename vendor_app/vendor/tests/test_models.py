@@ -58,7 +58,7 @@ class ModelTest(TestCase):
         for email, expected in sample_emails:
             random_vendor_code = self.fake.numerify(text='########')
             extra = {
-                'contact_details': 'contactme',
+                'contact_details': 'contact me',
                 'address': 'test address, street one, india',
                 'vendor_code': random_vendor_code,
             }
@@ -79,7 +79,7 @@ class ModelTest(TestCase):
 
             random_vendor_code = self.fake.numerify(text='########')
             extra = {
-                'contact_details': 'contactme',
+                'contact_details': 'contact me',
                 'address': 'test address, street one, india',
                 'vendor_code': random_vendor_code,
             }

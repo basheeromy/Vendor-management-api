@@ -101,11 +101,11 @@ class ManageVendorViewTest(TestCase):
         # generate access token
         access_token_url = reverse('obtain-token-pair')
         response = self.client.post(access_token_url, input_data)
-        self.accesstoken = response.json().get('access')
+        self.access_token = response.json().get('access')
         self.refresh_token = response.json().get('refresh')
 
         self.url = reverse('manage-vendor', kwargs={'id': 1})
-        self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
+        self.headers = {'Authorization': f'Bearer {self.access_token}'}
 
     def test_vendor_retrieve(self):
         """
@@ -160,14 +160,14 @@ class ManageVendorViewTest(TestCase):
 
     def test_refresh_token_endpoint(self):
         """
-            Test generating new acess token with refresh token.
+            Test generating new access token with refresh token.
         """
         refresh_token_url = reverse('refresh-token')
         input_data = {
             "refresh": self.refresh_token
         }
         response = self.client.post(refresh_token_url, input_data)
-        self.accesstoken = response.json().get('access')
+        self.access_token = response.json().get('access')
         self.refresh_token = response.json().get('refresh')
 
         # Check new access token.
@@ -212,11 +212,11 @@ class VendorPerformanceStatsViewTest(TestCase):
         # generate access token
         access_token_url = reverse('obtain-token-pair')
         response = self.client.post(access_token_url, input_data)
-        self.accesstoken = response.json().get('access')
+        self.access_token = response.json().get('access')
         self.refresh_token = response.json().get('refresh')
 
         self.url = reverse('vendor-performance', kwargs={'vendor': 1})
-        self.headers = {'Authorization': f'Bearer {self.accesstoken}'}
+        self.headers = {'Authorization': f'Bearer {self.access_token}'}
 
     def test_vendor_performance_retrieve(self):
         """
@@ -227,16 +227,16 @@ class VendorPerformanceStatsViewTest(TestCase):
             vendor=self.vendor
         ).first()
 
-        # send get request.
+        # Send get request.
         response = self.client.get(self.url, headers=self.headers)
         # print(response.json())  # to check errors. un comment this.
 
-        # check status code
+        # Check status code
         self.assertEqual(response.status_code, 200)
 
-        # generate expected data
-        # Use serializer to exclue write only fields.
+        # Generate expected data
+        # Use serializer to exclude write only fields.
         expected_data = VendorPerformanceSerializer(instance=perf_data).data
 
-        # compare expected data with response
+        # Compare expected data with response
         self.assertEqual(response.data, expected_data)

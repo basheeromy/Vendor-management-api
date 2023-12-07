@@ -102,7 +102,7 @@ def update_stats_post_save(sender, created, instance, **kwargs):
         perf_ins.no_po_issued += 1
         perf_ins.save()
 
-    elif not created:  # trigger only for updation.
+    elif not created:  # trigger only for update.
 
         # Set On time delivery rate.
         if (instance.status == 'completed' and
@@ -128,7 +128,7 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                 ).aggregate(avg_rating=Avg('quality_rating'))
                 perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
 
-            # Set Fullfillment Rate.
+            # Set Fulfillment Rate.
 
             perf_ins.fulfillment_rate = (
                 perf_ins.po_delivered/perf_ins.no_po_issued

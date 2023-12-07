@@ -31,3 +31,9 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
                 'read_only': True
             }
         }
+
+
+class PO_CompleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PurchaseOrder
+        fields = ['quality_rating']

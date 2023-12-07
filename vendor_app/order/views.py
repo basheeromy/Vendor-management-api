@@ -18,7 +18,8 @@ from .models import (
     PurchaseOrder,
 )
 from .serializers import (
-    PurchaseOrderSerializer
+    PurchaseOrderSerializer,
+    PO_CompleteSerializer
 )
 
 
@@ -48,7 +49,7 @@ class ManagePurchaseOrderView(RetrieveUpdateDestroyAPIView):
 
 class AcknowledgePOView(APIView):
     """
-        Aknowledge Purchase Order.
+        Acknowledge Purchase Order.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
@@ -70,6 +71,47 @@ class AcknowledgePOView(APIView):
             )
 
         return Response(
-            "Aknowledged Successfully",
+            "Acknowledged Successfully",
             status=status.HTTP_200_OK
         )
+
+
+class MarkCompletedView(APIView):
+    """
+        Mark Purchase Order as Completed.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PO_CompleteSerializer
+
+    def patch(self, request, *args, **kwargs):
+
+        # Access url parameters.
+        id = kwargs.get('id')
+
+        # Purchase Order object.
+        obj = get_object_or_404(PurchaseOrder, id=id)
+
+        # Check the order is acknowledged or not
+        if obj.acknowledgment_date is None:
+            return Response(
+                "Order not yet acknowledged.",
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Mark as completed.
+        if obj.status != 'completed':
+            obj.status = 'completed'
+            if request.data['quality_rating']:
+                obj.quality_rating = int(request.data['quality_rating'])
+            obj.save()
+
+            return Response(
+                    "Successful.",
+                    status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                        "Already updated.",
+                        status=status.HTTP_200_OK
+                )

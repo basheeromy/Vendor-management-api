@@ -41,7 +41,7 @@ class PurchaseOrderSerializerTestCase(TestCase):
             "vendor": 1
         }
 
-    def test_purchase_order_serilizer(self):
+    def test_purchase_order_serializer(self):
         """
             Check validation and serialization.
         """

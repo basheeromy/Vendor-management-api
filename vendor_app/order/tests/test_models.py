@@ -110,7 +110,7 @@ class PurchaseOrderModelTest(TestCase):
             purchase_order.quantity = -2
             purchase_order.full_clean()
 
-        # Test quality rating validator with negetive value.
+        # Test quality rating validator with negative value.
         with self.assertRaises(ValidationError):
             # Create an instance with a negative rating
             purchase_order.quality_rating = -2

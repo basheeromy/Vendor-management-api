@@ -327,6 +327,7 @@ class MarkCompletedViewTest(TestCase):
         self.access_token = response.json().get('access')
         self.headers = {'Authorization': f'Bearer {self.access_token}'}
 
+        # Purchase order one
         po_data = json.dumps({
             "po_number": "test-124-po",
             "items": {
@@ -355,10 +356,44 @@ class MarkCompletedViewTest(TestCase):
             format='json'
         )
 
+        # Purchase Order two.
+        po_2_data = json.dumps({
+            "po_number": "test-125-po",
+            "items": {
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            "quantity": 7,
+            "vendor": 1
+        })
+        po_2_url = reverse('list-create-purchase-order')
+        res = self.client.post(
+            po_2_url,
+            po_2_data,
+            headers=self.headers,
+            content_type='application/json'
+        )
+        self.po_2_id = res.json()["id"]
+
+        ack_url = reverse('acknowledge-po', kwargs={'id': self.po_2_id})
+
+        self.client.patch(
+            ack_url,
+            {},
+            headers=self.headers,
+            format='json'
+        )
+
         # Configure url and url params with headers.
         self.url = reverse(
             'mark-completed',
             kwargs={'id': self.po_id}
+        )
+
+        self.second_url = reverse(
+            'mark-completed',
+            kwargs={'id': self.po_2_id}
         )
 
     def test_patch_method(self):
@@ -375,4 +410,52 @@ class MarkCompletedViewTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), "Successful.")
+        self.assertEqual(
+            response.json(),
+            "Purchase order marked as "
+            "completed with quality rating."
+        )
+
+        # Test repeated request.
+        response = self.client.patch(
+            self.url,
+            {
+                "quality_rating": 8
+            },
+            headers=self.headers,
+            format='json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            "Already updated."
+        )
+
+        # Test without payload.
+        response = self.client.patch(
+            self.second_url,
+            {},
+            headers=self.headers,
+            format='json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            "Purchase order marked as "
+            "completed without quality rating."
+        )
+
+        # Test request with invalid data fails.
+        response = self.client.patch(
+            self.second_url,
+            {
+                "quality_rating": 15
+            },
+            headers=self.headers,
+            format='json'
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            "Data validation failed."
+        )

@@ -22,12 +22,14 @@ Clone this repository.
 
 Set up the project dependencies and environment.
 Run the application.
-Access http://localhost:8000/api/docs to explore the API documentation.
-Feel free to use this API to manage vendors efficiently!
 
-Packages used.
+Details of Dependencies.
 
-Django==4.2.7,
+python version 3.11.6
+
+Framework ~ Django==4.2.7
+
+Following are the libraries and packages used in this api application.
 
 django-cors-headers==4.3.1,
 
@@ -39,15 +41,22 @@ djangorestframework==3.14.0,
 
 djangorestframework-simplejwt==5.3.0,
 
-drf-spectacular==0.26.5,
+drf-spectacular==0.26.5,  (swagger)
 
-Faker==20.1.0,
+Faker==20.1.0, (we used to generate random texts in specific format.)
 
-flake8==6.1.0,
+flake8==6.1.0, (linting tool.
+see .flake8 file in django application's root directory.
+use flake8 command on cli to check pep8 standard.)
 
 python-dotenv==1.0.0
 
 
+----------------------------------
+
+
+Access http://localhost:8000/api/docs to explore the API documentation.
+Feel free to use this API to manage vendors efficiently!
 
 
 Order Related API endpoints.

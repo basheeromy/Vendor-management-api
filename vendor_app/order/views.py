@@ -84,7 +84,7 @@ class MarkCompletedView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = PO_CompleteSerializer
 
-    def patch(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid():

@@ -396,11 +396,11 @@ class MarkCompletedViewTest(TestCase):
             kwargs={'id': self.po_2_id}
         )
 
-    def test_patch_method(self):
+    def test_put_method(self):
         """
             Test view functioning.
         """
-        response = self.client.patch(
+        response = self.client.put(
             self.url,
             {
                 "quality_rating": 8
@@ -417,7 +417,7 @@ class MarkCompletedViewTest(TestCase):
         )
 
         # Test repeated request.
-        response = self.client.patch(
+        response = self.client.put(
             self.url,
             {
                 "quality_rating": 8
@@ -432,7 +432,7 @@ class MarkCompletedViewTest(TestCase):
         )
 
         # Test without payload.
-        response = self.client.patch(
+        response = self.client.put(
             self.second_url,
             {},
             headers=self.headers,
@@ -446,7 +446,7 @@ class MarkCompletedViewTest(TestCase):
         )
 
         # Test request with invalid data fails.
-        response = self.client.patch(
+        response = self.client.put(
             self.second_url,
             {
                 "quality_rating": 15

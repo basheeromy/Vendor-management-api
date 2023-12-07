@@ -61,6 +61,7 @@ class GenerateTokenView(APIView):
     """
     View to generate tokens.
     """
+    serializer_class = GenerateTokenSerializer
 
     @extend_schema(request=GenerateTokenSerializer, responses=None)
     def post(self, request, *args, **kwargs):

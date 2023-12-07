@@ -78,7 +78,7 @@ class GenerateTokenSerializer(serializers.Serializer):
 
 class VendorPerformanceSerializer(serializers.ModelSerializer):
     """
-        Serializer to provide statistic related
+        Serializer to provide statistics related
         fields from vendor model
     """
     class Meta:

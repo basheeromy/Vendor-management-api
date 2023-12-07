@@ -37,3 +37,5 @@ drf-spectacular==0.26.5
 Faker==20.1.0
 flake8==6.1.0
 python-dotenv==1.0.0
+
+![Getting Started](./images/swagger.png)

@@ -51,9 +51,10 @@ copy the generated secret key
     >>> exit()
 
 4. Create .env file in the project root directory.(where settings.py file exists)
-and paste the as SECRET_KEY=<secret_key>
+and paste SECRET_KEY=<secret_key>
 
 5. apply migrations
+
     $ python manage.py makemigrations
 
     $ python manage.py migrate

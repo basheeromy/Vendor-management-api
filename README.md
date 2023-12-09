@@ -20,19 +20,19 @@ Getting Started
 
 1. Clone this repository.
 
-$ git clone https://github.com/basheeromy/Vendor-management-api.git
+git clone https://github.com/basheeromy/Vendor-management-api.git
 
 move to the cloned directory.
 
 2. Setup virtual environment.
 
-$ python3 -m venv venv
+python3 -m venv venv
 
 $ source venv/bin/activate
 
 3. Set up the project dependencies.
 
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 
 4. Generate a new secret key.
 
@@ -40,11 +40,11 @@ here is a way to generate secret key
 
 open terminal.
 
-$ python3
->>> import secrets
->>> print(secrets.token_urlsafe())
+python3
+import secrets
+print(secrets.token_urlsafe())
 
-    copy the generated secret key
+copy the generated secret key
 
 exit()
 

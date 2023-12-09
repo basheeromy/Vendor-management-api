@@ -20,19 +20,19 @@ Getting Started
 
 1. Clone this repository.
 
-git clone https://github.com/basheeromy/Vendor-management-api.git
+    $ git clone https://github.com/basheeromy/Vendor-management-api.git
 
 move to the cloned directory.
 
 2. Setup virtual environment.
 
-    python3 -m venv venv
+    $ python3 -m venv venv
 
-$ source venv/bin/activate
+    $ source venv/bin/activate
 
 3. Set up the project dependencies.
 
-pip install -r requirements.txt
+    $ pip install -r requirements.txt
 
 4. Generate a new secret key.
 
@@ -40,26 +40,29 @@ here is a way to generate secret key
 
 open terminal.
 
-python3
-import secrets
-print(secrets.token_urlsafe())
+    $ python3
+
+    >>> import secrets
+
+    >>> print(secrets.token_urlsafe())
 
 copy the generated secret key
 
-exit()
+    >>> exit()
 
 4. Create .env file in the project root directory.(where settings.py file exists)
 and paste the as SECRET_KEY=<secret_key>
 
 5. apply migrations
-$ python manage.py makemigrations
-$ python manage.py migrate
+    $ python manage.py makemigrations
+
+    $ python manage.py migrate
 
 6. create super user to access admin interface.
 
 7. use the bellow given command to run the server.
 
-$ python manage.py runserver
+    $ python manage.py runserver
 
 Run the application.
 

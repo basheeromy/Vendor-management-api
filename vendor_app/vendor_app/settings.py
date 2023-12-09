@@ -41,7 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'debug_toolbar',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -50,6 +49,13 @@ INSTALLED_APPS = [
     'vendor',
     'order',
 ]
+if DEBUG:
+    INSTALLED_APPS += ['debug_toolbar']
+    
+    # Settings for debug-toolbar
+    INTERNAL_IPS = [
+        "127.0.0.1",
+    ]
 
 MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
@@ -200,9 +206,3 @@ CORS_ALLOWED_ORIGINS = [
 SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
 }
-
-# Settings for debug-toolbar
-
-INTERNAL_IPS = [
-    "127.0.0.1",
-]

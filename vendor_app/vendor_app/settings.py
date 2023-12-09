@@ -49,9 +49,10 @@ INSTALLED_APPS = [
     'vendor',
     'order',
 ]
+
 if DEBUG:
     INSTALLED_APPS += ['debug_toolbar']
-    
+
     # Settings for debug-toolbar
     INTERNAL_IPS = [
         "127.0.0.1",

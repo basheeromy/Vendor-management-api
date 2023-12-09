@@ -26,7 +26,7 @@ move to the cloned directory.
 
 2. Setup virtual environment.
 
-python3 -m venv venv
+    python3 -m venv venv
 
 $ source venv/bin/activate
 

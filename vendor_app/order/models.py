@@ -4,6 +4,7 @@
 
 from django.db import models
 from vendor.models import Vendor
+from django.core.cache import cache
 from django.db.models import Avg
 from django.utils import timezone
 from datetime import timedelta
@@ -90,47 +91,93 @@ def update_stats_pre_save(sender, instance, **kwargs):
 
 @receiver(post_save, sender=PurchaseOrder)
 def update_stats_post_save(sender, created, instance, **kwargs):
-    # print(instance.vendor)
+    # post save signals to update statistical data.
+
+    # Access performance instance of the vendor.
     perf_ins = VendorPerformance.objects.filter(
                 vendor=instance.vendor
             ).first()
 
-    if created:
-        # Reset number of po issued.
-        # Assuming that all po's directly forwarded to
-        # vendor at the time of purchase order creation.
-        perf_ins.no_po_issued += 1
-        perf_ins.save()
+    # Access cached data.
+    cached_data = cache.get(instance.vendor.vendor_code)
 
-    elif not created:  # trigger only for update.
+    # Check and populate cache.
+    if cached_data is None:
+        po_del = PurchaseOrder.objects.filter(
+            vendor=instance.vendor,
+            status='completed'
+        ).count()
 
-        # Set On time delivery rate.
-        if (instance.status == 'completed' and
-                instance.delivery_date is not None):
+        po_issued = PurchaseOrder.objects.filter(
+            vendor=instance.vendor
+        ).count()
+        perf_data = {
+            'po_del': po_del,
+            'po_issued': po_issued
+        }
+        cache.set(instance.vendor.vendor_code, perf_data)
+        cached_data = cache.get(instance.vendor.vendor_code)
 
-            # Calculate on time delivery rate.
-            perf_ins.po_delivered += 1
+        # Update fulfillment rate.
+        perf_ins.fulfillment_rate = (
+            cached_data['po_del']/cached_data['po_issued']
+        )
 
-            current_time = timezone.now()
-            if instance.delivery_date >= current_time:
-                perf_ins.po_deli_on_time += 1
+    # If cache is available and new po created.
+    elif created:
+        # Update the number of po issued.
+        # Assuming that the po is directly forwarded
+        # to vendor at the time of creating.
+        perf_data = {
+            'po_del': cached_data['po_del'],
+            'po_issued': cached_data['po_issued'] + 1
+        }
+        cache.set(instance.vendor.vendor_code, perf_data)
+        cached_data = cache.get(instance.vendor.vendor_code)
 
-            perf_ins.on_time_delivery_rate = (
-                perf_ins.po_deli_on_time/perf_ins.po_delivered
-            )
+        # Update fulfillment rate.
+        perf_ins.fulfillment_rate = (
+            cached_data['po_del']/cached_data['po_issued']
+        )
+    # If cache is available and po instance is updated
+    elif instance.status == 'completed':
+        # Update the number of po delivered.
+        perf_data = {
+            'po_del': cached_data['po_del'] + 1,
+            'po_issued': cached_data['po_issued']
+        }
+        cache.set(instance.vendor.vendor_code, perf_data)
+        cached_data = cache.get(instance.vendor.vendor_code)
 
-            # Set quality rating average.
-            if (instance.quality_rating is not None and
-                    instance.quality_rating > 0):
-                quality_rating_avg = PurchaseOrder.objects.filter(
-                    vendor=instance.vendor,
-                    status='completed'
-                ).aggregate(avg_rating=Avg('quality_rating'))
-                perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
+        # Update fulfillment rate.
+        perf_ins.fulfillment_rate = (
+            cached_data['po_del']/cached_data['po_issued']
+        )
 
-            # Set Fulfillment Rate.
+    if not created and (
+        instance.status == 'completed' and (
+            instance.delivery_date is not None
+        )
+    ):  # trigger only for updates.
 
-            perf_ins.fulfillment_rate = (
-                perf_ins.po_delivered/perf_ins.no_po_issued
-            )
-            perf_ins.save()
+        # Set quality rating average.
+        if (instance.quality_rating is not None and
+                instance.quality_rating > 0):
+            quality_rating_avg = PurchaseOrder.objects.filter(
+                vendor=instance.vendor,
+                status='completed'
+            ).aggregate(avg_rating=Avg('quality_rating'))
+            perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
+
+        # Calculate on time delivery rate.
+        cached_data = cache.get(instance.vendor.vendor_code)
+
+        current_time = timezone.now()
+        if instance.delivery_date >= current_time:
+            perf_ins.po_deli_on_time += 1
+
+        perf_ins.on_time_delivery_rate = (
+            perf_ins.po_deli_on_time/cached_data['po_del']
+        )
+
+    perf_ins.save()

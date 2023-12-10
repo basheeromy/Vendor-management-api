@@ -30,11 +30,9 @@ class VendorModelSignalsTest(TestCase):
         quality_rating_avg = None
         average_response_time = None
         fulfillment_rate = None
-        po_delivered = 0
         po_deli_on_time = 0
         res_time_total = 0
         res_count = 0
-        no_po_issued = 0
 
         perf_data = VendorPerformance.objects.filter(
             vendor=self.vendor
@@ -60,10 +58,7 @@ class VendorModelSignalsTest(TestCase):
             perf_data.fulfillment_rate,
             fulfillment_rate
         )
-        self.assertEqual(
-            perf_data.po_delivered,
-            po_delivered
-        )
+
         self.assertEqual(
             perf_data.po_deli_on_time,
             po_deli_on_time
@@ -75,10 +70,6 @@ class VendorModelSignalsTest(TestCase):
         self.assertEqual(
             perf_data.res_count,
             res_count
-        )
-        self.assertEqual(
-            perf_data.no_po_issued,
-            no_po_issued
         )
 
         # Test VendorPerformance model's __str__ method.

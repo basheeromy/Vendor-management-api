@@ -26,7 +26,7 @@ class TestPurchaseOrderSignals(TestCase):
             name='test Vendor',
             contact_details='email:tetvendor@example.com',
             address='test address, street one, india',
-            vendor_code='87654324',
+            vendor_code='87654324w',
             password='testpass123'
         )
 
@@ -118,12 +118,6 @@ class TestPurchaseOrderSignals(TestCase):
                 vendor=self.vendor
             ).first()
 
-        # Test resetting of no_po_issued (3, check setUp.)
-        self.assertEqual(
-            perf_ins.no_po_issued,
-            3
-        )
-
         # Set values to trigger signals for po 1
         self.purchase_order1.status = 'completed'
         self.purchase_order1.quality_rating = 8
@@ -161,6 +155,32 @@ class TestPurchaseOrderSignals(TestCase):
         # 2/3 = 0.66 and rounded to 6.7 as
         # we are using round method.
         expected_fulfillment_rate = 0.67
+
+        self.assertEqual(
+            round(perf_ins.fulfillment_rate, 2),
+            expected_fulfillment_rate
+        )
+
+        # Test fulfillment rate updated when a po issued
+
+        # Set purchase order 4
+        self.purchase_order4 = PurchaseOrder.objects.create(
+            po_number="test-126-po",
+            items={
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            quantity=5,
+            vendor=self.vendor
+        )
+
+        expected_fulfillment_rate = 0.5
+
+        # Access updated performance data of vendor
+        perf_ins = VendorPerformance.objects.filter(
+                vendor=self.vendor
+            ).first()
 
         self.assertEqual(
             round(perf_ins.fulfillment_rate, 2),

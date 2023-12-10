@@ -34,6 +34,10 @@ move to the cloned directory.
 
     $ pip install -r requirements.txt
 
+    Install development dependencies if needed.
+
+    $ pip install -r requirements.dev.txt
+
 4. Generate a new secret key.
 
 here is a way to generate secret key
@@ -50,20 +54,36 @@ copy the generated secret key
 
     >>> exit()
 
-4. Create .env file in the project root directory.(where settings.py file exists)
+4. Move to project directory.
+
+    $ cd vendor_app
+
+5. Create .env file in the project root directory.(where settings.py file exists)
 and paste SECRET_KEY=<secret_key>
 
-5. apply migrations
+6. apply migrations ( move to the directory which includes manage.py file )
 
     $ python manage.py makemigrations
 
     $ python manage.py migrate
 
-6. create super user to access admin interface.
+7. create super user to access admin interface.
 
-7. use the bellow given command to run the server.
+    $ python manage.py createsuperuser
+
+8. use the bellow given command to run the server.
 
     $ python manage.py runserver
+
+By incorporating efficient unit tests into our application,
+we're equipped to execute them using the following command:
+
+    $ python manage.py test
+
+If we have installed the dev dependencies, we can use linting tool
+with the help of following command to check pep8 standard.
+
+    $ flake8
 
 Run the application.
 

@@ -30,7 +30,6 @@ class VendorModelSignalsTest(TestCase):
         quality_rating_avg = None
         average_response_time = None
         fulfillment_rate = None
-        po_deli_on_time = 0
         res_time_total = 0
         res_count = 0
 
@@ -57,11 +56,6 @@ class VendorModelSignalsTest(TestCase):
         self.assertEqual(
             perf_data.fulfillment_rate,
             fulfillment_rate
-        )
-
-        self.assertEqual(
-            perf_data.po_deli_on_time,
-            po_deli_on_time
         )
         self.assertEqual(
             perf_data.res_time_total,

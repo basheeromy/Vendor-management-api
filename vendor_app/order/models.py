@@ -6,6 +6,7 @@ from django.db import models
 from vendor.models import Vendor
 from django.core.cache import cache
 from django.db.models import Avg
+from django.db.models import F
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models.signals import (
@@ -56,6 +57,7 @@ class PurchaseOrder(models.Model):
 
     )
     acknowledgment_date = models.DateTimeField(null=True, blank=True)
+    date_delivered = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"PO: {self.po_number} Vendor: {self.vendor.name}"
@@ -63,15 +65,24 @@ class PurchaseOrder(models.Model):
 
 @receiver(pre_save, sender=PurchaseOrder)
 def update_stats_pre_save(sender, instance, **kwargs):
+    current_time = timezone.now()
     # Set delivery date.
     if instance._state.adding:
-        current_time = timezone.now()
+
         date_in_10_days = current_time + timedelta(days=10)
         instance.delivery_date = date_in_10_days
 
-    # Set average response time.
     if instance.id:
         original_instance = PurchaseOrder.objects.get(id=instance.id)
+
+        if (
+            original_instance.date_delivered is None and (
+                instance.status == 'completed'
+            )
+        ):
+            instance.date_delivered = current_time
+
+        # Set average response time.
         if (original_instance.acknowledgment_date is None and
                 instance.acknowledgment_date is not None):
             time_diff = (
@@ -174,10 +185,32 @@ def update_stats_post_save(sender, created, instance, **kwargs):
 
         current_time = timezone.now()
         if instance.delivery_date >= current_time:
-            perf_ins.po_deli_on_time += 1
+            # perf_ins.po_deli_on_time += 1
 
-        perf_ins.on_time_delivery_rate = (
-            perf_ins.po_deli_on_time/cached_data['po_del']
-        )
+            if 'po_del_on_time' in cached_data.keys():
+                perf_data = {
+                    'po_del': cached_data['po_del'],
+                    'po_issued': cached_data['po_issued'],
+                    'po_del_on_time': cached_data['po_del_on_time'] + 1
+                }
+                cache.set(instance.vendor.vendor_code, perf_data)
+                cached_data = cache.get(instance.vendor.vendor_code)
+                perf_ins.on_time_delivery_rate = (
+                    cached_data['po_del_on_time']/cached_data['po_del']
+                )
+            else:
+                po_del_on_time = PurchaseOrder.objects.filter(
+                    delivery_date__gt=F('date_delivered')
+                ).count()
+                perf_data = {
+                    'po_del': cached_data['po_del'],
+                    'po_issued': cached_data['po_issued'],
+                    'po_del_on_time': po_del_on_time
+                }
+                cache.set(instance.vendor.vendor_code, perf_data)
+                cached_data = cache.get(instance.vendor.vendor_code)
+                perf_ins.on_time_delivery_rate = (
+                    cached_data['po_del_on_time']/cached_data['po_del']
+                )
 
     perf_ins.save()

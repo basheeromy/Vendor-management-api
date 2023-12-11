@@ -10,7 +10,8 @@ from django.db.models import (
     F,
     DurationField,
     ExpressionWrapper,
-    Sum
+    Sum,
+    Count
 )
 from django.utils import timezone
 from datetime import timedelta
@@ -91,39 +92,51 @@ def update_stats_pre_save(sender, instance, **kwargs):
         if (original_instance.acknowledgment_date is None and
                 instance.acknowledgment_date is not None):
 
+            # Calculate the response time for the current instance
             time_diff = (
                 instance.acknowledgment_date - original_instance.order_date
             )
 
+            # Expression used to calculate the response time of each po
             expression = ExpressionWrapper(
                 F('acknowledgment_date') - F('order_date'),
                 output_field=DurationField()
             )
 
-            resp_time_total = (
+            # Find the sum of the response time of all purchase orders
+            # and count of total purchase ordered vendor responded.
+            result = (
                 PurchaseOrder.objects.annotate(
                     difference=expression
                 ).aggregate(
-                    total_diff=Sum('difference')
+                    total_diff=Sum('difference'),
+                    count=Count(
+                        'id',
+                        filter=~models.Q(
+                            acknowledgment_date__isnull=True
+                        )
+                    )
                 )
             )
 
-            if resp_time_total['total_diff'] is not None:
+            # Ensure the total diff is not None as the bellow given
+            # calculations will happen to any pre-save signals.
+            if result['total_diff'] is not None:
 
-                resp_time_total['total_diff'] += time_diff
+                # Adjust the data from db with the data
+                # from the current instance.
+                result['total_diff'] += time_diff
 
-                cont_of_response = (
-                    PurchaseOrder.objects.filter(
-                        acknowledgment_date__isnull=False
-                    ).count()
-                ) + 1
+                result['count'] += 1
 
+                # Find the performance instance of the vendor.
                 perf_ins = VendorPerformance.objects.filter(
                     vendor=instance.vendor
                 ).first()
 
+                # Update and save the average response time of the vendor.
                 perf_ins.average_response_time = (
-                    (resp_time_total['total_diff']).days/cont_of_response
+                    (result['total_diff']).days/result['count']
                 )
 
                 perf_ins.save()

@@ -6,7 +6,12 @@ from django.db import models
 from vendor.models import Vendor
 from django.core.cache import cache
 from django.db.models import Avg
-from django.db.models import F
+from django.db.models import (
+    F,
+    DurationField,
+    ExpressionWrapper,
+    Sum
+)
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models.signals import (
@@ -85,19 +90,43 @@ def update_stats_pre_save(sender, instance, **kwargs):
         # Set average response time.
         if (original_instance.acknowledgment_date is None and
                 instance.acknowledgment_date is not None):
+
             time_diff = (
                 instance.acknowledgment_date - original_instance.order_date
             )
-            response_time = time_diff.days
-            perf_ins = VendorPerformance.objects.filter(
-                vendor=instance.vendor
-            ).first()
-            perf_ins.res_time_total += response_time
-            perf_ins.res_count += 1
-            perf_ins.average_response_time = (
-                perf_ins.res_time_total/perf_ins.res_count
+
+            expression = ExpressionWrapper(
+                F('acknowledgment_date') - F('order_date'),
+                output_field=DurationField()
             )
-            perf_ins.save()
+
+            resp_time_total = (
+                PurchaseOrder.objects.annotate(
+                    difference=expression
+                ).aggregate(
+                    total_diff=Sum('difference')
+                )
+            )
+
+            if resp_time_total['total_diff'] is not None:
+
+                resp_time_total['total_diff'] += time_diff
+
+                cont_of_response = (
+                    PurchaseOrder.objects.filter(
+                        acknowledgment_date__isnull=False
+                    ).count()
+                ) + 1
+
+                perf_ins = VendorPerformance.objects.filter(
+                    vendor=instance.vendor
+                ).first()
+
+                perf_ins.average_response_time = (
+                    (resp_time_total['total_diff']).days/cont_of_response
+                )
+
+                perf_ins.save()
 
 
 @receiver(post_save, sender=PurchaseOrder)
@@ -212,5 +241,31 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                 perf_ins.on_time_delivery_rate = (
                     cached_data['po_del_on_time']/cached_data['po_del']
                 )
+
+    # if not created and (
+    #     instance.status == 'completed' and (
+    #         instance.delivery_date is not None
+    #     )
+    # ):
+    # Set average response time.
+
+        # expression = ExpressionWrapper(
+        #     F('')
+        # )
+        # if (original_instance.acknowledgment_date is None and
+        #         instance.acknowledgment_date is not None):
+        #     time_diff = (
+        #         instance.acknowledgment_date - original_instance.order_date
+        #     )
+        #     response_time = time_diff.days
+        #     perf_ins = VendorPerformance.objects.filter(
+        #         vendor=instance.vendor
+        #     ).first()
+        #     perf_ins.res_time_total += response_time
+        #     perf_ins.res_count += 1
+        #     perf_ins.average_response_time = (
+        #         perf_ins.res_time_total/perf_ins.res_count
+        #     )
+        #     perf_ins.save()
 
     perf_ins.save()

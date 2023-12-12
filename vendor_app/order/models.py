@@ -101,8 +101,16 @@ def update_stats_pre_save(sender, instance, **kwargs):
                 instance.acknowledgment_date - original_instance.order_date
             )
 
+            # Find the performance instance of the vendor.
+            perf_ins = VendorPerformance.objects.filter(
+                vendor=instance.vendor
+            ).first()
+
             # Access cached data.
             cached_data = cache.get(instance.vendor.vendor_code)
+
+            # set expiration time
+            expire_in = 86400  # seconds (1 day)
 
             # print(cached_data)
             if cached_data is None or (
@@ -133,47 +141,72 @@ def update_stats_pre_save(sender, instance, **kwargs):
                     )
                 )
 
-                # Ensure the total diff is not None as the bellow given
-                # calculations will happen to any pre-save signals.
-                if result['total_resp_time'] is not None:
+                """
+                    Check the scenarios which can derive from
+                    presence or the absence of data. adjust data
+                    with what we get from db and what we have.
+                """
+                if result['total_resp_time'] is None:
 
-                    # Adjust the data from db with the data
-                    # from the current instance.
+                    result['total_resp_time'] = time_diff
+                    result['total_resp_count'] = 1
+                elif result['total_resp_time'] is not None :
+
                     result['total_resp_time'] += time_diff
                     result['total_resp_count'] += 1
-                    try:
-                        cached_data.update({
-                            'res_time_total': result['total_resp_time'],
-                            'res_count': result['total_resp_count']
-                        })
-                    except AttributeError:
-                        cached_data = {
-                            'res_time_total': result['total_resp_time'],
-                            'res_count': result['total_resp_count']
-                        }
-                     # set expiration time
-                    expire_in = 86400  # seconds (1 day)
-                    
-                    cache.set(
-                        instance.vendor.vendor_code,
-                        cached_data,
-                        timeout=expire_in
-                    )
 
-                    cached_data = cache.get(instance.vendor.vendor_code)
+                try:
+                    cached_data.update({
+                        'res_time_total': result['total_resp_time'],
+                        'res_count': result['total_resp_count']
+                    })
+                except AttributeError:
+                    cached_data = {
+                        'res_time_total': result['total_resp_time'],
+                        'res_count': result['total_resp_count']
+                    }
 
-                    # Find the performance instance of the vendor.
-                    perf_ins = VendorPerformance.objects.filter(
-                        vendor=instance.vendor
-                    ).first()
 
-                    # Update and save the average response time of the vendor.
-                    perf_ins.average_response_time = (
-                        (cached_data['res_time_total']).days /
-                        cached_data['res_count']
-                    )
+                cache.set(
+                    instance.vendor.vendor_code,
+                    cached_data,
+                    timeout=expire_in
+                )
 
-                    perf_ins.save()
+                cached_data = cache.get(instance.vendor.vendor_code)
+
+                # Update and save the average response time of the vendor.
+                perf_ins.average_response_time = (
+                    (cached_data['res_time_total']).days /
+                    cached_data['res_count']
+                )
+
+            else:
+                # Case of both cache and the respective keys are present.
+
+                # Update the data.
+                cached_data.update({
+                    'res_time_total': cached_data['res_time_total'] + time_diff,
+                    'res_count': cached_data['res_count'] + 1
+                })
+
+                # Set cache.
+                cache.set(
+                    instance.vendor.vendor_code,
+                    cached_data,
+                    timeout=expire_in
+                )
+
+                # Update and save the average response time of the vendor.
+                perf_ins.average_response_time = (
+                    (cached_data['res_time_total']).days /
+                    cached_data['res_count']
+                )
+
+            # Save performance instance.
+            perf_ins.save()
+
+
 
 
 @receiver(post_save, sender=PurchaseOrder)

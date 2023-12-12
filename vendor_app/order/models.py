@@ -71,16 +71,20 @@ class PurchaseOrder(models.Model):
 
 @receiver(pre_save, sender=PurchaseOrder)
 def update_stats_pre_save(sender, instance, **kwargs):
+    # Pre save signals.
+
     current_time = timezone.now()
+
     # Set delivery date.
     if instance._state.adding:
-
         date_in_10_days = current_time + timedelta(days=10)
         instance.delivery_date = date_in_10_days
 
+    # Check if updating.
     if instance.id:
         original_instance = PurchaseOrder.objects.get(id=instance.id)
 
+        # Set the date delivered the product.
         if (
             original_instance.date_delivered is None and (
                 instance.status == 'completed'
@@ -97,49 +101,76 @@ def update_stats_pre_save(sender, instance, **kwargs):
                 instance.acknowledgment_date - original_instance.order_date
             )
 
-            # Expression used to calculate the response time of each po
-            expression = ExpressionWrapper(
-                F('acknowledgment_date') - F('order_date'),
-                output_field=DurationField()
-            )
+            # Access cached data.
+            cached_data = cache.get(instance.vendor.vendor_code)
 
-            # Find the sum of the response time of all purchase orders
-            # and count of total purchase ordered vendor responded.
-            result = (
-                PurchaseOrder.objects.annotate(
-                    difference=expression
-                ).aggregate(
-                    total_diff=Sum('difference'),
-                    count=Count(
-                        'id',
-                        filter=~models.Q(
-                            acknowledgment_date__isnull=True
+            # print(cached_data)
+            if cached_data is None or (
+                'res_time_total' not in cached_data.keys() or (
+                    'res_count' not in cached_data.keys()
+                )
+            ):
+
+                # Expression used to calculate the response time of each po
+                expression = ExpressionWrapper(
+                    F('acknowledgment_date') - F('order_date'),
+                    output_field=DurationField()
+                )
+
+                # Find the sum of the response time of all purchase orders
+                # and count of total purchase ordered vendor responded.
+                result = (
+                    PurchaseOrder.objects.annotate(
+                        difference=expression
+                    ).aggregate(
+                        total_resp_time=Sum('difference'),
+                        total_resp_count=Count(
+                            'id',
+                            filter=~models.Q(
+                                acknowledgment_date__isnull=True
+                            )
                         )
                     )
                 )
-            )
 
-            # Ensure the total diff is not None as the bellow given
-            # calculations will happen to any pre-save signals.
-            if result['total_diff'] is not None:
+                # Ensure the total diff is not None as the bellow given
+                # calculations will happen to any pre-save signals.
+                if result['total_resp_time'] is not None:
 
-                # Adjust the data from db with the data
-                # from the current instance.
-                result['total_diff'] += time_diff
+                    # Adjust the data from db with the data
+                    # from the current instance.
+                    result['total_resp_time'] += time_diff
+                    result['total_resp_count'] += 1
+                    try:
+                        cached_data.update({
+                            'res_time_total': result['total_resp_time'],
+                            'res_count': result['total_resp_count']
+                        })
+                    except AttributeError:
+                        cached_data = {
+                            'res_time_total': result['total_resp_time'],
+                            'res_count': result['total_resp_count']
+                        }
+                    cache.set(
+                        instance.vendor.vendor_code,
+                        cached_data,
+                        timeout=86400
+                    )
 
-                result['count'] += 1
+                    cached_data = cache.get(instance.vendor.vendor_code)
 
-                # Find the performance instance of the vendor.
-                perf_ins = VendorPerformance.objects.filter(
-                    vendor=instance.vendor
-                ).first()
+                    # Find the performance instance of the vendor.
+                    perf_ins = VendorPerformance.objects.filter(
+                        vendor=instance.vendor
+                    ).first()
 
-                # Update and save the average response time of the vendor.
-                perf_ins.average_response_time = (
-                    (result['total_diff']).days/result['count']
-                )
+                    # Update and save the average response time of the vendor.
+                    perf_ins.average_response_time = (
+                        (cached_data['res_time_total']).days /
+                        cached_data['res_count']
+                    )
 
-                perf_ins.save()
+                    perf_ins.save()
 
 
 @receiver(post_save, sender=PurchaseOrder)
@@ -155,7 +186,11 @@ def update_stats_post_save(sender, created, instance, **kwargs):
     cached_data = cache.get(instance.vendor.vendor_code)
 
     # Check and populate cache.
-    if cached_data is None:
+    if cached_data is None or (
+        'po_del' not in cached_data.keys() or (
+            'po_issued' not in cached_data.keys()
+        )
+    ):
         po_del = PurchaseOrder.objects.filter(
             vendor=instance.vendor,
             status='completed'
@@ -164,11 +199,22 @@ def update_stats_post_save(sender, created, instance, **kwargs):
         po_issued = PurchaseOrder.objects.filter(
             vendor=instance.vendor
         ).count()
-        perf_data = {
-            'po_del': po_del,
-            'po_issued': po_issued
-        }
-        cache.set(instance.vendor.vendor_code, perf_data)
+
+        try:
+            cached_data.update({
+                'po_del': po_del,
+                'po_issued': po_issued
+            })
+        except AttributeError:
+            cached_data = {
+                'po_del': po_del,
+                'po_issued': po_issued
+            }
+        cache.set(
+            instance.vendor.vendor_code,
+            cached_data,
+            timeout=86400
+        )
         cached_data = cache.get(instance.vendor.vendor_code)
 
         # Update fulfillment rate.
@@ -181,11 +227,22 @@ def update_stats_post_save(sender, created, instance, **kwargs):
         # Update the number of po issued.
         # Assuming that the po is directly forwarded
         # to vendor at the time of creating.
-        perf_data = {
-            'po_del': cached_data['po_del'],
-            'po_issued': cached_data['po_issued'] + 1
-        }
-        cache.set(instance.vendor.vendor_code, perf_data)
+
+        try:
+            cached_data.update({
+                'po_issued': cached_data['po_issued'] + 1
+            })
+        except AttributeError:
+            cached_data = {
+                'po_del': cached_data['po_del'],
+                'po_issued': cached_data['po_issued'] + 1
+            }
+
+        cache.set(
+            instance.vendor.vendor_code,
+            cached_data,
+            timeout=86400
+        )
         cached_data = cache.get(instance.vendor.vendor_code)
 
         # Update fulfillment rate.
@@ -195,11 +252,20 @@ def update_stats_post_save(sender, created, instance, **kwargs):
     # If cache is available and po instance is updated
     elif instance.status == 'completed':
         # Update the number of po delivered.
-        perf_data = {
-            'po_del': cached_data['po_del'] + 1,
-            'po_issued': cached_data['po_issued']
-        }
-        cache.set(instance.vendor.vendor_code, perf_data)
+        try:
+            cached_data.update({
+                'po_del': cached_data['po_del'] + 1,
+            })
+        except AttributeError:
+            cached_data = {
+                'po_del': cached_data['po_del'] + 1,
+                'po_issued': cached_data['po_issued']
+            }
+        cache.set(
+            instance.vendor.vendor_code,
+            cached_data,
+            timeout=86400
+        )
         cached_data = cache.get(instance.vendor.vendor_code)
 
         # Update fulfillment rate.
@@ -227,15 +293,23 @@ def update_stats_post_save(sender, created, instance, **kwargs):
 
         current_time = timezone.now()
         if instance.delivery_date >= current_time:
-            # perf_ins.po_deli_on_time += 1
 
             if 'po_del_on_time' in cached_data.keys():
-                perf_data = {
-                    'po_del': cached_data['po_del'],
-                    'po_issued': cached_data['po_issued'],
-                    'po_del_on_time': cached_data['po_del_on_time'] + 1
-                }
-                cache.set(instance.vendor.vendor_code, perf_data)
+                try:
+                    cached_data.update({
+                        'po_del_on_time': cached_data['po_del_on_time'] + 1
+                    })
+                except AttributeError:
+                    cached_data = {
+                        'po_del': cached_data['po_del'],
+                        'po_issued': cached_data['po_issued'],
+                        'po_del_on_time': cached_data['po_del_on_time'] + 1
+                    }
+                cache.set(
+                    instance.vendor.vendor_code,
+                    cached_data,
+                    timeout=86400
+                )
                 cached_data = cache.get(instance.vendor.vendor_code)
                 perf_ins.on_time_delivery_rate = (
                     cached_data['po_del_on_time']/cached_data['po_del']
@@ -244,41 +318,24 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                 po_del_on_time = PurchaseOrder.objects.filter(
                     delivery_date__gt=F('date_delivered')
                 ).count()
-                perf_data = {
-                    'po_del': cached_data['po_del'],
-                    'po_issued': cached_data['po_issued'],
-                    'po_del_on_time': po_del_on_time
-                }
-                cache.set(instance.vendor.vendor_code, perf_data)
+                try:
+                    cached_data.update({
+                        'po_del_on_time': po_del_on_time
+                    })
+                except AttributeError:
+                    cached_data = {
+                        'po_del': cached_data['po_del'],
+                        'po_issued': cached_data['po_issued'],
+                        'po_del_on_time': po_del_on_time
+                    }
+                cache.set(
+                    instance.vendor.vendor_code,
+                    cached_data,
+                    timeout=86400
+                )
                 cached_data = cache.get(instance.vendor.vendor_code)
                 perf_ins.on_time_delivery_rate = (
                     cached_data['po_del_on_time']/cached_data['po_del']
                 )
-
-    # if not created and (
-    #     instance.status == 'completed' and (
-    #         instance.delivery_date is not None
-    #     )
-    # ):
-    # Set average response time.
-
-        # expression = ExpressionWrapper(
-        #     F('')
-        # )
-        # if (original_instance.acknowledgment_date is None and
-        #         instance.acknowledgment_date is not None):
-        #     time_diff = (
-        #         instance.acknowledgment_date - original_instance.order_date
-        #     )
-        #     response_time = time_diff.days
-        #     perf_ins = VendorPerformance.objects.filter(
-        #         vendor=instance.vendor
-        #     ).first()
-        #     perf_ins.res_time_total += response_time
-        #     perf_ins.res_count += 1
-        #     perf_ins.average_response_time = (
-        #         perf_ins.res_time_total/perf_ins.res_count
-        #     )
-        #     perf_ins.save()
 
     perf_ins.save()

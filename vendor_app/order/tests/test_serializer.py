@@ -77,6 +77,7 @@ class PurchaseOrderSerializerTestCase(TestCase):
         self.assertNotIn('quality_rating', serializer.validated_data)
         self.assertNotIn('acknowledgment_date', serializer.validated_data)
         self.assertNotIn('order_date', serializer.validated_data)
+        self.assertNotIn('date_delivered', serializer.validated_data)
 
         # test with invalid data
         invalid_data = self.purchase_order_data.copy()

@@ -29,6 +29,9 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
             },
             'acknowledgment_date': {
                 'read_only': True
+            },
+            'date_delivered': {
+                'read_only': True
             }
         }
 

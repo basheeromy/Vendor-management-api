@@ -151,10 +151,13 @@ def update_stats_pre_save(sender, instance, **kwargs):
                             'res_time_total': result['total_resp_time'],
                             'res_count': result['total_resp_count']
                         }
+                     # set expiration time
+                    expire_in = 86400  # seconds (1 day)
+                    
                     cache.set(
                         instance.vendor.vendor_code,
                         cached_data,
-                        timeout=86400
+                        timeout=expire_in
                     )
 
                     cached_data = cache.get(instance.vendor.vendor_code)
@@ -185,6 +188,9 @@ def update_stats_post_save(sender, created, instance, **kwargs):
     # Access cached data.
     cached_data = cache.get(instance.vendor.vendor_code)
 
+    # set expiration time
+    expire_in = 86400  # seconds (1 day)
+
     # Check and populate cache.
     if cached_data is None or (
         'po_del' not in cached_data.keys() or (
@@ -213,7 +219,7 @@ def update_stats_post_save(sender, created, instance, **kwargs):
         cache.set(
             instance.vendor.vendor_code,
             cached_data,
-            timeout=86400
+            timeout=expire_in
         )
         cached_data = cache.get(instance.vendor.vendor_code)
 
@@ -241,7 +247,7 @@ def update_stats_post_save(sender, created, instance, **kwargs):
         cache.set(
             instance.vendor.vendor_code,
             cached_data,
-            timeout=86400
+            timeout=expire_in
         )
         cached_data = cache.get(instance.vendor.vendor_code)
 
@@ -264,7 +270,7 @@ def update_stats_post_save(sender, created, instance, **kwargs):
         cache.set(
             instance.vendor.vendor_code,
             cached_data,
-            timeout=86400
+            timeout=expire_in
         )
         cached_data = cache.get(instance.vendor.vendor_code)
 
@@ -308,7 +314,7 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                 cache.set(
                     instance.vendor.vendor_code,
                     cached_data,
-                    timeout=86400
+                    timeout=expire_in
                 )
                 cached_data = cache.get(instance.vendor.vendor_code)
                 perf_ins.on_time_delivery_rate = (
@@ -331,11 +337,12 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                 cache.set(
                     instance.vendor.vendor_code,
                     cached_data,
-                    timeout=86400
+                    timeout=expire_in
                 )
                 cached_data = cache.get(instance.vendor.vendor_code)
                 perf_ins.on_time_delivery_rate = (
                     cached_data['po_del_on_time']/cached_data['po_del']
                 )
 
+    # Save the performance instance with changes.
     perf_ins.save()

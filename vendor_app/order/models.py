@@ -69,9 +69,39 @@ class PurchaseOrder(models.Model):
         return f"PO: {self.po_number} Vendor: {self.vendor.name}"
 
 
+def update_cache(cached_data, data):
+    """
+        This function is meant to update
+        data in cache.
+
+    Args:
+        cached_data(type = dict/None)
+        data (type = dict)
+    Returns:
+        cached_data(type = dict)
+    """
+    try:
+        cached_data.update(data)
+    except AttributeError:
+        cached_data = data
+
+    return cached_data
+
+
 @receiver(pre_save, sender=PurchaseOrder)
 def update_stats_pre_save(sender, instance, **kwargs):
-    # Pre save signals.
+    """
+        This pre save signal function is meant to
+        update different statistical data's related
+        to vendor's performance.
+
+    Args:
+        sender(type = model)
+        instance (type = model instance) to be updated.
+        **kwargs (type = key word arguments)
+    Returns:
+        None
+    """
 
     current_time = timezone.now()
 
@@ -97,7 +127,7 @@ def update_stats_pre_save(sender, instance, **kwargs):
                 instance.acknowledgment_date is not None):
 
             # Calculate the response time for the current instance
-            time_diff = (
+            response_time = (
                 instance.acknowledgment_date - original_instance.order_date
             )
 
@@ -125,8 +155,10 @@ def update_stats_pre_save(sender, instance, **kwargs):
                     output_field=DurationField()
                 )
 
-                # Find the sum of the response time of all purchase orders
-                # and count of total purchase ordered vendor responded.
+                """
+                    Find the sum of the response time of all purchase orders
+                    and count of total purchase orders vendor responded.
+                """
                 result = (
                     PurchaseOrder.objects.annotate(
                         difference=expression
@@ -147,25 +179,19 @@ def update_stats_pre_save(sender, instance, **kwargs):
                     with what we get from db and what we have.
                 """
                 if result['total_resp_time'] is None:
-
-                    result['total_resp_time'] = time_diff
+                    result['total_resp_time'] = response_time
                     result['total_resp_count'] = 1
-                elif result['total_resp_time'] is not None :
 
-                    result['total_resp_time'] += time_diff
+                elif result['total_resp_time'] is not None:
+                    result['total_resp_time'] += response_time
                     result['total_resp_count'] += 1
 
-                try:
-                    cached_data.update({
-                        'res_time_total': result['total_resp_time'],
-                        'res_count': result['total_resp_count']
-                    })
-                except AttributeError:
-                    cached_data = {
+                # Handle cache.
+                data = {
                         'res_time_total': result['total_resp_time'],
                         'res_count': result['total_resp_count']
                     }
-
+                cached_data = update_cache(cached_data, data)
 
                 cache.set(
                     instance.vendor.vendor_code,
@@ -173,6 +199,7 @@ def update_stats_pre_save(sender, instance, **kwargs):
                     timeout=expire_in
                 )
 
+                # Retrieved updated cache.
                 cached_data = cache.get(instance.vendor.vendor_code)
 
                 # Update and save the average response time of the vendor.
@@ -186,7 +213,9 @@ def update_stats_pre_save(sender, instance, **kwargs):
 
                 # Update the data.
                 cached_data.update({
-                    'res_time_total': cached_data['res_time_total'] + time_diff,
+                    'res_time_total': (
+                        cached_data['res_time_total'] + response_time
+                    ),
                     'res_count': cached_data['res_count'] + 1
                 })
 
@@ -207,11 +236,21 @@ def update_stats_pre_save(sender, instance, **kwargs):
             perf_ins.save()
 
 
-
-
 @receiver(post_save, sender=PurchaseOrder)
 def update_stats_post_save(sender, created, instance, **kwargs):
-    # post save signals to update statistical data.
+    """
+        This post save signal function is meant to
+        update different statistical data's related
+        to vendor's performance.
+
+    Args:
+        sender(type = model)
+        created (type = boolean)
+        instance (type = model instance). updated
+        **kwargs (type = key word arguments)
+    Returns:
+        None
+    """
 
     # Access performance instance of the vendor.
     perf_ins = VendorPerformance.objects.filter(
@@ -226,11 +265,11 @@ def update_stats_post_save(sender, created, instance, **kwargs):
 
     # Check and populate cache.
     if cached_data is None or (
-        'po_del' not in cached_data.keys() or (
+        'po_delivered' not in cached_data.keys() or (
             'po_issued' not in cached_data.keys()
         )
     ):
-        po_del = PurchaseOrder.objects.filter(
+        po_delivered = PurchaseOrder.objects.filter(
             vendor=instance.vendor,
             status='completed'
         ).count()
@@ -239,16 +278,11 @@ def update_stats_post_save(sender, created, instance, **kwargs):
             vendor=instance.vendor
         ).count()
 
-        try:
-            cached_data.update({
-                'po_del': po_del,
-                'po_issued': po_issued
-            })
-        except AttributeError:
-            cached_data = {
-                'po_del': po_del,
+        data = {
+                'po_delivered': po_delivered,
                 'po_issued': po_issued
             }
+        cached_data = update_cache(cached_data, data)
         cache.set(
             instance.vendor.vendor_code,
             cached_data,
@@ -258,25 +292,21 @@ def update_stats_post_save(sender, created, instance, **kwargs):
 
         # Update fulfillment rate.
         perf_ins.fulfillment_rate = (
-            cached_data['po_del']/cached_data['po_issued']
+            cached_data['po_delivered']/cached_data['po_issued']
         )
 
-    # If cache is available and new po created.
     elif created:
-        # Update the number of po issued.
-        # Assuming that the po is directly forwarded
-        # to vendor at the time of creating.
+        """
+            If cache is available and new po created.
 
-        try:
-            cached_data.update({
-                'po_issued': cached_data['po_issued'] + 1
-            })
-        except AttributeError:
-            cached_data = {
-                'po_del': cached_data['po_del'],
+            Update the number of po issued.
+            Assuming that the po is directly forwarded
+            to vendor at the time of creating.
+        """
+        data = {
                 'po_issued': cached_data['po_issued'] + 1
             }
-
+        cached_data = update_cache(cached_data, data)
         cache.set(
             instance.vendor.vendor_code,
             cached_data,
@@ -286,20 +316,17 @@ def update_stats_post_save(sender, created, instance, **kwargs):
 
         # Update fulfillment rate.
         perf_ins.fulfillment_rate = (
-            cached_data['po_del']/cached_data['po_issued']
+            cached_data['po_delivered']/cached_data['po_issued']
         )
-    # If cache is available and po instance is updated
+
     elif instance.status == 'completed':
+        # If cache is available and po instance is updated
+
         # Update the number of po delivered.
-        try:
-            cached_data.update({
-                'po_del': cached_data['po_del'] + 1,
-            })
-        except AttributeError:
-            cached_data = {
-                'po_del': cached_data['po_del'] + 1,
-                'po_issued': cached_data['po_issued']
+        data = {
+                'po_delivered': cached_data['po_delivered'] + 1
             }
+        cached_data = update_cache(cached_data, data)
         cache.set(
             instance.vendor.vendor_code,
             cached_data,
@@ -309,73 +336,62 @@ def update_stats_post_save(sender, created, instance, **kwargs):
 
         # Update fulfillment rate.
         perf_ins.fulfillment_rate = (
-            cached_data['po_del']/cached_data['po_issued']
+            cached_data['po_delivered']/cached_data['po_issued']
         )
 
-    if not created and (
-        instance.status == 'completed' and (
-            instance.delivery_date is not None
-        )
-    ):  # trigger only for updates.
+        if instance.delivery_date is not None:
 
-        # Set quality rating average.
-        if (instance.quality_rating is not None and
-                instance.quality_rating > 0):
-            quality_rating_avg = PurchaseOrder.objects.filter(
-                vendor=instance.vendor,
-                status='completed'
-            ).aggregate(avg_rating=Avg('quality_rating'))
-            perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
+            # Set quality rating average.
+            if (instance.quality_rating is not None and
+                    instance.quality_rating > 0):
+                quality_rating_avg = PurchaseOrder.objects.filter(
+                    vendor=instance.vendor,
+                    status='completed'
+                ).aggregate(avg_rating=Avg('quality_rating'))
+                perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
 
-        # Calculate on time delivery rate.
-        cached_data = cache.get(instance.vendor.vendor_code)
+            # Calculate on time delivery rate.
+            cached_data = cache.get(instance.vendor.vendor_code)
 
-        current_time = timezone.now()
-        if instance.delivery_date >= current_time:
+            current_time = timezone.now()
+            if instance.delivery_date >= current_time:
 
-            if 'po_del_on_time' in cached_data.keys():
-                try:
-                    cached_data.update({
-                        'po_del_on_time': cached_data['po_del_on_time'] + 1
-                    })
-                except AttributeError:
-                    cached_data = {
-                        'po_del': cached_data['po_del'],
-                        'po_issued': cached_data['po_issued'],
-                        'po_del_on_time': cached_data['po_del_on_time'] + 1
-                    }
-                cache.set(
-                    instance.vendor.vendor_code,
-                    cached_data,
-                    timeout=expire_in
-                )
-                cached_data = cache.get(instance.vendor.vendor_code)
-                perf_ins.on_time_delivery_rate = (
-                    cached_data['po_del_on_time']/cached_data['po_del']
-                )
-            else:
-                po_del_on_time = PurchaseOrder.objects.filter(
-                    delivery_date__gt=F('date_delivered')
-                ).count()
-                try:
-                    cached_data.update({
-                        'po_del_on_time': po_del_on_time
-                    })
-                except AttributeError:
-                    cached_data = {
-                        'po_del': cached_data['po_del'],
-                        'po_issued': cached_data['po_issued'],
-                        'po_del_on_time': po_del_on_time
-                    }
-                cache.set(
-                    instance.vendor.vendor_code,
-                    cached_data,
-                    timeout=expire_in
-                )
-                cached_data = cache.get(instance.vendor.vendor_code)
-                perf_ins.on_time_delivery_rate = (
-                    cached_data['po_del_on_time']/cached_data['po_del']
-                )
+                if 'po_delivered_on_time' in cached_data.keys():
+                    data = {
+                            'po_delivered_on_time': (
+                                cached_data['po_delivered_on_time'] + 1
+                            )
+                        }
+                    cached_data = update_cache(cached_data, data)
+                    cache.set(
+                        instance.vendor.vendor_code,
+                        cached_data,
+                        timeout=expire_in
+                    )
+                    cached_data = cache.get(instance.vendor.vendor_code)
+                    perf_ins.on_time_delivery_rate = (
+                        cached_data['po_delivered_on_time'] /
+                        cached_data['po_delivered']
+                    )
+                else:
+                    po_delivered_on_time = PurchaseOrder.objects.filter(
+                        delivery_date__gt=F('date_delivered')
+                    ).count()
+
+                    data = {
+                            'po_delivered_on_time': po_delivered_on_time
+                        }
+                    cached_data = update_cache(cached_data, data)
+                    cache.set(
+                        instance.vendor.vendor_code,
+                        cached_data,
+                        timeout=expire_in
+                    )
+                    cached_data = cache.get(instance.vendor.vendor_code)
+                    perf_ins.on_time_delivery_rate = (
+                        cached_data['po_delivered_on_time'] /
+                        cached_data['po_delivered']
+                    )
 
     # Save the performance instance with changes.
     perf_ins.save()

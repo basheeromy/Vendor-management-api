@@ -1,13 +1,69 @@
 """
     Serializers to manage vendors.
 """
+from drf_writable_nested.serializers import WritableNestedModelSerializer
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+
 from .models import VendorPerformance
+from .models import (Vendor)
 
 
-class VendorSerializer(serializers.ModelSerializer):
+class VendorProfileSerializer(serializers.ModelSerializer):
+    """
+        Serializer for Vendor model which
+        stores additional data of users
+        registered as vendors.
+    """
+
+    class Meta:
+        model = Vendor
+        fields = [
+            'id',
+            'user',
+            'contact_details',
+            'address',
+            'vendor_code'
+        ]
+        extra_kwargs = {
+            'user': {
+                'read_only': True
+            },
+        }
+
+
+class VendorSerializer(WritableNestedModelSerializer):
+    """
+        Manage operations related to creation and updation
+        of new vendor profile.
+
+        As we are using nested serializer, default .update()
+        method does not support writable nested fields.
+        So, here we are using a serializer available in drf-writable-nested
+        package.
+
+        Use request method PATCH for partial updating, Exclude the vendor_code
+        field unless we want to edit (Unique constraint of the field will lead
+        to error).
+
+        Key for nested vendor data is "vendor".
+
+        {
+            "id": 0,
+            "email": "user@example.com",
+            "name": "string",
+            "vendor": {
+            "id": 0,
+            "user": 0,
+            "contact_details": "string",
+            "address": "string",
+            "vendor_code": "string"
+            }
+        }
+
+    """
+    vendor = VendorProfileSerializer()
 
     class Meta:
         model = get_user_model()
@@ -15,17 +71,15 @@ class VendorSerializer(serializers.ModelSerializer):
             'id',
             'email',
             'name',
-            'contact_details',
-            'address',
-            'vendor_code',
-            'password'
+            'password',
+            'vendor'
 
         ]
         extra_kwargs = {
             'password': {
                 'write_only': True,
                 'min_length': 5
-            }
+            },
         }
 
     def create(self, validated_data):

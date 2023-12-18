@@ -8,7 +8,7 @@ from .serializers import (
     VendorPerformanceSerializer
 )
 from .models import (
-    Vendor,
+    User,
     VendorPerformance
 )
 
@@ -31,17 +31,17 @@ class ListCreateVendorView(ListCreateAPIView):
         Create a new vendor using POST method.
         Ensure that the vendor_code field does not
         commence with the keyword "superuser".
+
+        Use application/json mode to test creating
+        vendor from swagger UI
+
+        Use request method PATCH for partial updating,
+        Exclude the vendor_code field unless we want to
+        edit (Unique constraint of the field will lead
+        to error).
     """
     serializer_class = VendorSerializer
-    # queryset = Vendor.objects.filter()
-
-    def get_queryset(self):
-        """
-            Ensure only vendors are listed.
-            Admin users are excluded.
-        """
-        queryset = Vendor.objects.filter(is_seller=True)
-        return queryset
+    queryset = User.objects.filter(is_seller=True).prefetch_related('vendor')
 
 
 class ManageVendorView(RetrieveUpdateDestroyAPIView):
@@ -51,7 +51,7 @@ class ManageVendorView(RetrieveUpdateDestroyAPIView):
     """
 
     serializer_class = VendorSerializer
-    queryset = Vendor.objects.all()
+    queryset = User.objects.all()
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'id'

@@ -8,8 +8,6 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
-from faker import Faker
-from django.contrib.auth import get_user_model
 
 from django.db.models.signals import (
     post_save
@@ -22,22 +20,16 @@ class UserManager(BaseUserManager):
         Manager for users
     """
 
-    def create_vendor(
-        self,
-        email,
-        name,
-        password=None,
-        **extra_fields
-    ):
+    def create_user(self, email, name, password=None, **extra_fields):
         """
-            Create, save and return a new vendor.
+            Create and return a normal user
         """
 
         if not email:
-            raise ValueError('Vendor must have an email address.')
+            raise ValueError('User must have an email address.')
 
         if not name:
-            raise ValueError('Vendor must have a Name.')
+            raise ValueError('User must have a Name.')
 
         user = self.model(
             email=self.normalize_email(email),
@@ -49,41 +41,55 @@ class UserManager(BaseUserManager):
 
         return user
 
+    def create_vendor(
+        self,
+        **extra_fields
+    ):
+        """
+            Create, save and return a new vendor.
+        """
+
+        vendor_data = extra_fields.pop('vendor')
+        vendor_data = dict(vendor_data)
+        user = self.create_user(
+            is_seller=True,
+            **extra_fields
+        )
+
+        vendor = Vendor.objects.create(
+            user=user,
+            **vendor_data
+        )
+
+        user.__dict__['vendor'] = vendor.__dict__
+
+        return user.__dict__
+
     def create_superuser(self, email, name, password=None):
         """
             Create and return new super user.
         """
-
-        fake = Faker()
-        random_vendor_code = fake.numerify(text='########')
-        random_vendor_code = 'superuser'+random_vendor_code
-        user = self.create_vendor(
+        user = self.create_user(
             email,
             name,
             password,
-            vendor_code=random_vendor_code,
             is_staff=True,
             is_superuser=True,
-            is_seller=False,
-            is_active=True,
-
+            is_active=True
         )
         user.save(using=self._db)
         return user
 
 
-class Vendor(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin):
     """
         Model to create vendor instance.
     """
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=150)
-    contact_details = models.TextField(null=True, blank=True)
-    address = models.TextField(null=True, blank=True)
-    vendor_code = models.CharField(max_length=50, unique=True, blank=True)
-    is_seller = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_seller = models.BooleanField(default=False)
 
     objects = UserManager()
 
@@ -92,6 +98,25 @@ class Vendor(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.name
+
+
+class Vendor(models.Model):
+    """
+        Model designed to handle vendor-specific
+        fields enables the decoupling of vendors
+        from normal users.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='vendor'
+    )
+    contact_details = models.TextField(null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    vendor_code = models.CharField(max_length=50, unique=True, blank=True)
+
+    def __str__(self):
+        return self.user.name
 
 
 class VendorPerformance(models.Model):
@@ -118,7 +143,7 @@ def create_performance_instance(sender, created, instance, **kwargs):
         created vendor.
     """
     if created:
-        vendor = get_user_model().objects.get(id=instance.id)
+        vendor = Vendor.objects.get(id=instance.id)
         VendorPerformance.objects.create(
             vendor=vendor
         )

@@ -144,7 +144,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Settings for Authentication.
-AUTH_USER_MODEL = 'vendor.Vendor'
+AUTH_USER_MODEL = 'vendor.User'
 
 # Settings for rest framework
 

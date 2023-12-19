@@ -41,7 +41,7 @@ class ListCreateVendorView(ListCreateAPIView):
         to error).
     """
     serializer_class = VendorSerializer
-    queryset = User.objects.filter(is_seller=True).prefetch_related('vendor')
+    queryset = User.objects.filter(is_seller=True).prefetch_related('vendor_data')
 
 
 class ManageVendorView(RetrieveUpdateDestroyAPIView):

@@ -33,7 +33,6 @@ class VendorModelSignalsTest(TestCase):
         average_response_time = None
         fulfillment_rate = None
 
-        print(self.vendor.vendor_data)
         perf_data = VendorPerformance.objects.filter(
             vendor=self.vendor.vendor_data
         ).first()

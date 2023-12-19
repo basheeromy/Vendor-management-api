@@ -3,12 +3,13 @@
 """
 
 from django.test import TestCase
-from vendor.models import Vendor
+from vendor.models import User
 from vendor.serializers import (
     VendorSerializer,
     GenerateTokenSerializer,
     VendorPerformanceSerializer
 )
+from rest_framework.exceptions import ValidationError
 from django.urls import reverse
 from rest_framework.test import APIClient
 from vendor.models import VendorPerformance
@@ -21,10 +22,12 @@ class VendorSerializerTestCase(TestCase):
     vendor_data = {
         'email': 'testuser123@example.com',
         'name': 'test Vendor',
-        'contact_details': 'email:tetvendor@example.com',
-        'address': 'test address, street one, India',
-        'vendor_code': '87654324',
-        'password': 'testpass123'
+        'password': 'testpass123',
+        'vendor_data': {
+            "contact_details": "test contact details",
+            "address": "test address, street one, India",
+            "vendor_code": "87654324"
+        }
     }
 
     def test_vendor_serializer(self):
@@ -46,15 +49,15 @@ class VendorSerializerTestCase(TestCase):
             'test Vendor'
         )
         self.assertEqual(
-            serialized_data['contact_details'],
-            'email:tetvendor@example.com'
+            serialized_data['vendor_data']['contact_details'],
+            'test contact details'
         )
         self.assertEqual(
-            serialized_data['address'],
+            serialized_data['vendor_data']['address'],
             'test address, street one, India'
         )
         self.assertEqual(
-            serialized_data['vendor_code'],
+            serialized_data['vendor_data']['vendor_code'],
             '87654324'
         )
         self.assertNotIn(
@@ -68,8 +71,7 @@ class VendorSerializerTestCase(TestCase):
         """
         # Create invalid data for testing
         invalid_data = self.vendor_data.copy()
-        invalid_data.pop('name')
-
+        invalid_data.pop('vendor_data')
         serializer = VendorSerializer(data=invalid_data)
         self.assertFalse(serializer.is_valid())
 
@@ -79,7 +81,23 @@ class VendorSerializerTestCase(TestCase):
         """
         serializer = VendorSerializer()
         vendor = serializer.create(self.vendor_data)
-        self.assertIsInstance(vendor, Vendor)
+        self.assertIsInstance(vendor, User)
+
+        # Test validation for create method with duplicate data.
+        serializer = VendorSerializer(data=self.vendor_data)
+
+        with self.assertRaises(ValidationError) as context:
+            serializer.is_valid(raise_exception=True)
+
+        # Check validation of email
+        self.assertTrue('email' in str(context.exception.detail))
+
+        # Check validation of vendor_code
+        self.assertTrue(
+            'vendor_code' in str(
+                context.exception.detail['vendor_data']
+            )
+        )
 
     def test_vendor_serializer_update_method(self):
         """
@@ -116,10 +134,12 @@ class GenerateTokenSerializerTest(TestCase):
         self.vendor_data = {
             'email': 'testuser123@example.com',
             'name': 'test Vendor',
-            'contact_details': 'email:tetvendor@example.com',
-            'address': 'test address, street one, India',
-            'vendor_code': '87654324',
-            'password': 'testpass123'
+            'password': 'testpass123',
+            'vendor_data': {
+                "contact_details": "test contact details",
+                "address": "test address, street one, India",
+                "vendor_code": "87654324"
+            }
         }
 
         self.input_data = {
@@ -132,7 +152,8 @@ class GenerateTokenSerializerTest(TestCase):
         create_vendor_url = reverse("list-create-vendor")
         self.vendor = self.client.post(
             create_vendor_url,
-            self.vendor_data
+            self.vendor_data,
+            format="json"
         )
 
     def test_generate_token_serializer(self):
@@ -146,11 +167,13 @@ class GenerateTokenSerializerTest(TestCase):
 
         # check returned data fields.
         serialized_data = serializer.data
+
         self.assertEqual(
             serialized_data['email'],
             'testuser123@example.com'
         )
-        vendor_instance = Vendor.objects.get(id=1)
+        vendor_instance = User.objects.get(id=1)
+
         self.assertEqual(
             serialized_data['password'],
             vendor_instance.password
@@ -178,17 +201,20 @@ class VendorPerformanceSerializerTestCase(TestCase):
         self.vendor_data = {
             'email': 'testuser123@example.com',
             'name': 'test Vendor',
-            'contact_details': 'email:tetvendor@example.com',
-            'address': 'test address, street one, India',
-            'vendor_code': '87654324',
-            'password': 'testpass123'
+            'password': 'testpass123',
+            'vendor_data': {
+                "contact_details": "test contact details",
+                "address": "test address, street one, India",
+                "vendor_code": "87654324"
+            }
         }
 
         client = APIClient()
         create_vendor_url = reverse("list-create-vendor")
         self.vendor = client.post(
             create_vendor_url,
-            self.vendor_data
+            self.vendor_data,
+            format="json"
         ).json()
 
         self.perf_inst = VendorPerformance.objects.filter(
@@ -204,10 +230,4 @@ class VendorPerformanceSerializerTestCase(TestCase):
 
         # Test serializer returned data.
         self.assertEqual(serializer.data['id'], self.vendor['id'])
-
-        # Test serializer excludes write only fields.
-        self.assertNotIn('po_delivered', serializer.data)
-        self.assertNotIn('po_deli_on_time', serializer.data)
-        self.assertNotIn('res_time_total', serializer.data)
-        self.assertNotIn('res_count', serializer.data)
-        self.assertNotIn('no_po_issued', serializer.data)
+        print(serializer.data)

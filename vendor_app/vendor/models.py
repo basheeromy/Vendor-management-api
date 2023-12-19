@@ -48,8 +48,7 @@ class UserManager(BaseUserManager):
         """
             Create, save and return a new vendor.
         """
-
-        vendor_data = extra_fields.pop('vendor')
+        vendor_data = extra_fields.pop('vendor_data')
         vendor_data = dict(vendor_data)
         user = self.create_user(
             is_seller=True,
@@ -61,9 +60,9 @@ class UserManager(BaseUserManager):
             **vendor_data
         )
 
-        user.__dict__['vendor'] = vendor.__dict__
+        user.__dict__['vendor_data'] = vendor.__dict__
 
-        return user.__dict__
+        return user
 
     def create_superuser(self, email, name, password=None):
         """
@@ -109,14 +108,14 @@ class Vendor(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='vendor'
+        related_name='vendor_data'
     )
     contact_details = models.TextField(null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     vendor_code = models.CharField(max_length=50, unique=True, blank=True)
 
     def __str__(self):
-        return self.user.name
+        return f"{self.user.name}'s profile"
 
 
 class VendorPerformance(models.Model):

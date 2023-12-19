@@ -53,7 +53,7 @@ class VendorSerializer(WritableNestedModelSerializer):
             "id": 0,
             "email": "user@example.com",
             "name": "string",
-            "vendor": {
+            "vendor_data": {
             "id": 0,
             "user": 0,
             "contact_details": "string",
@@ -63,7 +63,7 @@ class VendorSerializer(WritableNestedModelSerializer):
         }
 
     """
-    vendor = VendorProfileSerializer()
+    vendor_data = VendorProfileSerializer()
 
     class Meta:
         model = get_user_model()
@@ -72,7 +72,7 @@ class VendorSerializer(WritableNestedModelSerializer):
             'email',
             'name',
             'password',
-            'vendor'
+            'vendor_data'
 
         ]
         extra_kwargs = {
@@ -86,7 +86,6 @@ class VendorSerializer(WritableNestedModelSerializer):
         """
             Create and return a vendor with encrypted password.
         """
-
         return get_user_model().objects.create_vendor(**validated_data)
 
     def update(self, instance, validated_data):

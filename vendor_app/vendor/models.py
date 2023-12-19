@@ -132,7 +132,7 @@ class VendorPerformance(models.Model):
     fulfillment_rate = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.vendor}'s performance data"
+        return f"{self.vendor.user}'s performance data"
 
 
 @receiver(post_save, sender=Vendor)

@@ -230,4 +230,3 @@ class VendorPerformanceSerializerTestCase(TestCase):
 
         # Test serializer returned data.
         self.assertEqual(serializer.data['id'], self.vendor['id'])
-        print(serializer.data)

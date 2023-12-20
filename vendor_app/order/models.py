@@ -3,7 +3,6 @@
 """
 
 from django.db import models
-from vendor.models import Vendor
 from django.core.cache import cache
 from django.db.models import Avg
 from django.db.models import (
@@ -19,6 +18,7 @@ from django.db.models.signals import (
     post_save,
     pre_save
 )
+from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from django.core.validators import (
     MinValueValidator,
@@ -39,7 +39,10 @@ class PurchaseOrder(models.Model):
         ('canceled', 'Canceled'),
     ]
     po_number = models.CharField(max_length=100, unique=True)
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE)
+    vendor = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.CASCADE
+    )
     order_date = models.DateTimeField(auto_now_add=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     items = models.JSONField()
@@ -137,12 +140,11 @@ def update_stats_pre_save(sender, instance, **kwargs):
             ).first()
 
             # Access cached data.
-            cached_data = cache.get(instance.vendor.vendor_code)
+            cached_data = cache.get(instance.vendor.id)
 
             # set expiration time
             expire_in = 86400  # seconds (1 day)
 
-            # print(cached_data)
             if cached_data is None or (
                 'res_time_total' not in cached_data.keys() or (
                     'res_count' not in cached_data.keys()
@@ -194,13 +196,13 @@ def update_stats_pre_save(sender, instance, **kwargs):
                 cached_data = update_cache(cached_data, data)
 
                 cache.set(
-                    instance.vendor.vendor_code,
+                    instance.vendor.id,
                     cached_data,
                     timeout=expire_in
                 )
 
                 # Retrieved updated cache.
-                cached_data = cache.get(instance.vendor.vendor_code)
+                cached_data = cache.get(instance.vendor.id)
 
                 # Update and save the average response time of the vendor.
                 perf_ins.average_response_time = (
@@ -221,7 +223,7 @@ def update_stats_pre_save(sender, instance, **kwargs):
 
                 # Set cache.
                 cache.set(
-                    instance.vendor.vendor_code,
+                    instance.vendor.id,
                     cached_data,
                     timeout=expire_in
                 )
@@ -251,14 +253,13 @@ def update_stats_post_save(sender, created, instance, **kwargs):
     Returns:
         None
     """
-
     # Access performance instance of the vendor.
     perf_ins = VendorPerformance.objects.filter(
                 vendor=instance.vendor
             ).first()
 
     # Access cached data.
-    cached_data = cache.get(instance.vendor.vendor_code)
+    cached_data = cache.get(instance.vendor.id)
 
     # set expiration time
     expire_in = 86400  # seconds (1 day)
@@ -284,11 +285,11 @@ def update_stats_post_save(sender, created, instance, **kwargs):
             }
         cached_data = update_cache(cached_data, data)
         cache.set(
-            instance.vendor.vendor_code,
+            instance.vendor.id,
             cached_data,
             timeout=expire_in
         )
-        cached_data = cache.get(instance.vendor.vendor_code)
+        cached_data = cache.get(instance.vendor.id)
 
         # Update fulfillment rate.
         perf_ins.fulfillment_rate = (
@@ -308,11 +309,11 @@ def update_stats_post_save(sender, created, instance, **kwargs):
             }
         cached_data = update_cache(cached_data, data)
         cache.set(
-            instance.vendor.vendor_code,
+            instance.vendor.id,
             cached_data,
             timeout=expire_in
         )
-        cached_data = cache.get(instance.vendor.vendor_code)
+        cached_data = cache.get(instance.vendor.id)
 
         # Update fulfillment rate.
         perf_ins.fulfillment_rate = (
@@ -328,16 +329,19 @@ def update_stats_post_save(sender, created, instance, **kwargs):
             }
         cached_data = update_cache(cached_data, data)
         cache.set(
-            instance.vendor.vendor_code,
+            instance.vendor.id,
             cached_data,
             timeout=expire_in
         )
-        cached_data = cache.get(instance.vendor.vendor_code)
+        cached_data = cache.get(instance.vendor.id)
 
         # Update fulfillment rate.
         perf_ins.fulfillment_rate = (
             cached_data['po_delivered']/cached_data['po_issued']
         )
+        # print(cached_data['po_delivered'])
+        # print(cached_data['po_issued'])
+        # print(perf_ins.fulfillment_rate)
 
         if instance.delivery_date is not None:
 
@@ -351,7 +355,7 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                 perf_ins.quality_rating_avg = quality_rating_avg['avg_rating']
 
             # Calculate on time delivery rate.
-            cached_data = cache.get(instance.vendor.vendor_code)
+            cached_data = cache.get(instance.vendor.id)
 
             current_time = timezone.now()
             if instance.delivery_date >= current_time:
@@ -364,11 +368,11 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                         }
                     cached_data = update_cache(cached_data, data)
                     cache.set(
-                        instance.vendor.vendor_code,
+                        instance.vendor.id,
                         cached_data,
                         timeout=expire_in
                     )
-                    cached_data = cache.get(instance.vendor.vendor_code)
+                    cached_data = cache.get(instance.vendor.id)
                     perf_ins.on_time_delivery_rate = (
                         cached_data['po_delivered_on_time'] /
                         cached_data['po_delivered']
@@ -383,11 +387,11 @@ def update_stats_post_save(sender, created, instance, **kwargs):
                         }
                     cached_data = update_cache(cached_data, data)
                     cache.set(
-                        instance.vendor.vendor_code,
+                        instance.vendor.id,
                         cached_data,
                         timeout=expire_in
                     )
-                    cached_data = cache.get(instance.vendor.vendor_code)
+                    cached_data = cache.get(instance.vendor.id)
                     perf_ins.on_time_delivery_rate = (
                         cached_data['po_delivered_on_time'] /
                         cached_data['po_delivered']

@@ -1,188 +1,208 @@
-# """
-#     Unit tests for Signals.
-# """
-# from django.test import TestCase
-# from django.utils import timezone
-# from datetime import timedelta
-# from django.contrib.auth import get_user_model
+"""
+    Unit tests for Signals.
+"""
+from django.test import TestCase
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth import get_user_model
+from django.core.cache import cache
 
-# from order.models import PurchaseOrder
-# from vendor.models import (
-#     VendorPerformance
-# )
+from order.models import PurchaseOrder
+from vendor.models import (
+    VendorPerformance
+)
 
 
-# class TestPurchaseOrderSignals(TestCase):
-#     """
-#         Unit test to update Signals in
-#         PurchaseOrder model.
-#     """
-#     def setUp(self):
-#         """
-#             Set up data for testing.
-#         """
-#         self.vendor = get_user_model().objects.create_vendor(
-#             email='testvendor@example.com',
-#             name='test Vendor',
-#             contact_details='email:tetvendor@example.com',
-#             address='test address, street one, india',
-#             vendor_code='87654324w',
-#             password='testpass123'
-#         )
+class TestPurchaseOrderSignals(TestCase):
+    """
+        Unit test to update Signals in
+        PurchaseOrder model.
+    """
+    def setUp(self):
+        """
+            Set up data for testing.
+        """
+        email = 'testvendorw@example.com'
+        name = 'test Vendor'
+        password = 'testpass123'
+        vendor_data = {
+            "contact_details": "email:tetvendor@example.com",
+            "address": "test address, street one, india",
+            "vendor_code": "87654324wh"
+        }
 
-#         # Set purchase order 1
-#         self.purchase_order1 = PurchaseOrder.objects.create(
-#             po_number="test-123-po",
-#             items={
-#                 "testProp1": "test_string",
-#                 "testProp2": "test_string",
-#                 "testProp3": "test_string"
-#             },
-#             quantity=5,
-#             vendor=self.vendor
-#         )
+        self.vendor = get_user_model().objects.create_vendor(
+            email=email,
+            name=name,
+            password=password,
+            vendor_data=vendor_data
+        )
 
-#         # Set purchase order 2
-#         self.purchase_order2 = PurchaseOrder.objects.create(
-#             po_number="test-124-po",
-#             items={
-#                 "testProp1": "test_string",
-#                 "testProp2": "test_string",
-#                 "testProp3": "test_string"
-#             },
-#             quantity=5,
-#             vendor=self.vendor
-#         )
-#         # Set purchase order 3
-#         self.purchase_order3 = PurchaseOrder.objects.create(
-#             po_number="test-125-po",
-#             items={
-#                 "testProp1": "test_string",
-#                 "testProp2": "test_string",
-#                 "testProp3": "test_string"
-#             },
-#             quantity=5,
-#             vendor=self.vendor
-#         )
+        """
+            Clear caches as we are using vendor's id to store
+            performance related data in cache.
 
-#     def test_update_stats_pre_save(self):
-#         """
-#             Test pre save signals.
-#         """
+            Unit testing will create new mock databases for each unit
+            test and running server is not changing in between this -
+            process. so, when we use in memory caching, there are
+            chances for unwanted data remains in cache from previous tests
+            and we are not considering them here.
+        """
+        cache.clear()
 
-#         # Set acknowledgment dates for two orders.
-#         acknow_date_1 = timezone.now() + timedelta(days=2)
-#         acknow_date_2 = timezone.now() + timedelta(days=4)
+        # Set purchase order 1
+        self.purchase_order1 = PurchaseOrder.objects.create(
+            po_number="test-123-po",
+            items={
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            quantity=5,
+            vendor=self.vendor
+        )
 
-#         # Set to 10 days from now.
-#         expected_delivery_date = timezone.now() + timedelta(days=10)
+        # Set purchase order 2
+        self.purchase_order2 = PurchaseOrder.objects.create(
+            po_number="test-124-po",
+            items={
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            quantity=5,
+            vendor=self.vendor
+        )
+        # Set purchase order 3
+        self.purchase_order3 = PurchaseOrder.objects.create(
+            po_number="test-125-po",
+            items={
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            quantity=5,
+            vendor=self.vendor
+        )
 
-#         # Test Setting of Delivery date.
-#         self.assertAlmostEqual(
-#             self.purchase_order1.delivery_date.timestamp(),
-#             expected_delivery_date.timestamp(),
-#             delta=1  # Tolerance in seconds for time comparison
-#         )
+    def test_update_stats_pre_save(self):
+        """
+            Test pre save signals.
+        """
 
-#         # Set acknowledgment_date for po 1
-#         self.purchase_order1.acknowledgment_date = acknow_date_1
-#         self.purchase_order1.save()
+        # Set acknowledgment dates for two orders.
+        acknow_date_1 = timezone.now() + timedelta(days=2)
+        acknow_date_2 = timezone.now() + timedelta(days=4)
 
-#         # Set acknowledgment_date for po 2
-#         self.purchase_order2.acknowledgment_date = acknow_date_2
-#         self.purchase_order2.save()
+        # Set to 10 days from now.
+        expected_delivery_date = timezone.now() + timedelta(days=10)
 
-#         # Access performance data of vendor
-#         perf_ins = VendorPerformance.objects.filter(
-#                 vendor=self.vendor
-#             ).first()
+        # Test Setting of Delivery date.
+        self.assertAlmostEqual(
+            self.purchase_order1.delivery_date.timestamp(),
+            expected_delivery_date.timestamp(),
+            delta=1  # Tolerance in seconds for time comparison
+        )
 
-#         # Access average response time.
-#         avg_resp_time = perf_ins.average_response_time
+        # Set acknowledgment_date for po 1
+        self.purchase_order1.acknowledgment_date = acknow_date_1
+        self.purchase_order1.save()
 
-#         # Expected average response time.
-#         expected_avg_resp_time = 3.0   # (2+4)/2 = 3
+        # Set acknowledgment_date for po 2
+        self.purchase_order2.acknowledgment_date = acknow_date_2
+        self.purchase_order2.save()
 
-#         self.assertEqual(
-#             avg_resp_time,
-#             expected_avg_resp_time
-#         )
+        # Access performance data of vendor
+        perf_ins = VendorPerformance.objects.filter(
+                vendor=self.vendor
+            ).first()
 
-#     def test_update_stats_post_save(self):
-#         """
-#             Test post save signals.
-#         """
+        # Access average response time.
+        avg_resp_time = perf_ins.average_response_time
 
-#         # Access performance data of vendor
-#         perf_ins = VendorPerformance.objects.filter(
-#                 vendor=self.vendor
-#             ).first()
+        # Expected average response time.
+        expected_avg_resp_time = 3.0   # (2+4)/2 = 3
 
-#         # Set values to trigger signals for po 1
-#         self.purchase_order1.status = 'completed'
-#         self.purchase_order1.quality_rating = 8
-#         self.purchase_order1.save()
+        self.assertEqual(
+            avg_resp_time,
+            expected_avg_resp_time
+        )
 
-#         # Set values to trigger signals for po 2
-#         self.purchase_order2.status = 'completed'
-#         self.purchase_order2.quality_rating = 4
-#         self.purchase_order2.save()
+    def test_update_stats_post_save(self):
+        """
+            Test post save signals.
+        """
 
-#         # Access updated performance data of vendor
-#         perf_ins = VendorPerformance.objects.filter(
-#                 vendor=self.vendor
-#             ).first()
+        # Access performance data of vendor
+        perf_ins = VendorPerformance.objects.filter(
+                vendor=self.vendor
+            ).first()
 
-#         # Set expected on time delivery rate.
-#         expected_on_time_del_rate = 1.0  # 100%
+        # Set values to trigger signals for po 1
+        self.purchase_order1.status = 'completed'
+        self.purchase_order1.quality_rating = 8
+        self.purchase_order1.save()
 
-#         # Set expected quality rating average.
-#         expected_quality_rate_avg = 6.0
+        # Set values to trigger signals for po 2
+        self.purchase_order2.status = 'completed'
+        self.purchase_order2.quality_rating = 4
+        self.purchase_order2.save()
 
-#         # Test on time delivery rate
-#         self.assertEqual(
-#             perf_ins.on_time_delivery_rate,
-#             expected_on_time_del_rate
-#         )
+        # Access updated performance data of vendor
+        perf_ins = VendorPerformance.objects.filter(
+                vendor=self.vendor
+            ).first()
 
-#         # Test on quality rating average.
-#         self.assertEqual(
-#             perf_ins.quality_rating_avg,
-#             expected_quality_rate_avg
-#         )
+        # Set expected on time delivery rate.
+        expected_on_time_del_rate = 1.0  # 100%
 
-#         # Set expected Fulfillment rate.
-#         # 2/3 = 0.66 and rounded to 6.7 as
-#         # we are using round method.
-#         expected_fulfillment_rate = 0.67
+        # Set expected quality rating average.
+        expected_quality_rate_avg = 6.0
 
-#         self.assertEqual(
-#             round(perf_ins.fulfillment_rate, 2),
-#             expected_fulfillment_rate
-#         )
+        # Test on time delivery rate
+        self.assertEqual(
+            perf_ins.on_time_delivery_rate,
+            expected_on_time_del_rate
+        )
 
-#         # Test fulfillment rate updated when a po issued
+        # Test on quality rating average.
+        self.assertEqual(
+            perf_ins.quality_rating_avg,
+            expected_quality_rate_avg
+        )
 
-#         # Set purchase order 4
-#         self.purchase_order4 = PurchaseOrder.objects.create(
-#             po_number="test-126-po",
-#             items={
-#                 "testProp1": "test_string",
-#                 "testProp2": "test_string",
-#                 "testProp3": "test_string"
-#             },
-#             quantity=5,
-#             vendor=self.vendor
-#         )
+        # Set expected Fulfillment rate.
+        # 2/3 = 0.66 and rounded to 6.7 as
+        # we are using round method.
+        expected_fulfillment_rate = 0.67
 
-#         expected_fulfillment_rate = 0.5
+        self.assertEqual(
+            round(perf_ins.fulfillment_rate, 2),
+            expected_fulfillment_rate
+        )
 
-#         # Access updated performance data of vendor
-#         perf_ins = VendorPerformance.objects.filter(
-#                 vendor=self.vendor
-#             ).first()
+        # Test fulfillment rate updated when a po issued
 
-#         self.assertEqual(
-#             round(perf_ins.fulfillment_rate, 2),
-#             expected_fulfillment_rate
-#         )
+        # Set purchase order 4
+        self.purchase_order4 = PurchaseOrder.objects.create(
+            po_number="test-126-po",
+            items={
+                "testProp1": "test_string",
+                "testProp2": "test_string",
+                "testProp3": "test_string"
+            },
+            quantity=5,
+            vendor=self.vendor
+        )
+
+        expected_fulfillment_rate = 0.5
+
+        # Access updated performance data of vendor
+        perf_ins = VendorPerformance.objects.filter(
+                vendor=self.vendor
+            ).first()
+
+        self.assertEqual(
+            round(perf_ins.fulfillment_rate, 2),
+            expected_fulfillment_rate
+        )

@@ -8,7 +8,6 @@ from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 from vendor.models import (
     Vendor,
-    User,
     VendorPerformance
 )
 from vendor.serializers import (
@@ -78,7 +77,9 @@ class ListCreateVendorViewTest(TestCase):
         self.assertEqual(response.status_code, 201)
 
         # Check if the new vendor is created in the database
-        new_vendor = User.objects.filter(email='testuser124@example.com').first()
+        new_vendor = get_user_model().objects.filter(
+            email='testuser124@example.com'
+        ).first()
         self.assertIsNotNone(new_vendor)
 
 
@@ -167,7 +168,9 @@ class ManageVendorViewTest(TestCase):
             format='json'
         )
         self.assertEqual(response.status_code, 200)
-        updated_vendor = User.objects.get(id=self.vendor.json()['id'])
+        updated_vendor = get_user_model().objects.get(
+            id=self.vendor.json()['id']
+        )
         self.assertEqual(updated_vendor.name, 'updated test Vendor')
         self.assertEqual(
             updated_vendor.vendor_data.contact_details,
@@ -182,11 +185,21 @@ class ManageVendorViewTest(TestCase):
             Test DELETE request to delete a vendor
         """
         response = self.client.delete(self.url, headers=self.headers)
+
         self.assertEqual(response.status_code, 204)
-        deleted_vendor = Vendor.objects.filter(
+
+        deleted_vendor = get_user_model().objects.filter(
             id=self.vendor.json()['id']
         ).first()
+
         self.assertIsNone(deleted_vendor)
+
+        # Test Vendor profile(Vendor model instance) also deleted.
+        deleted_prof = Vendor.objects.filter(
+            id=self.vendor.json()['vendor_data']['id']
+        ).first()
+
+        self.assertIsNone(deleted_prof)
 
     def test_refresh_token_endpoint(self):
         """
@@ -240,7 +253,9 @@ class VendorPerformanceStatsViewTest(TestCase):
             self.vendor_data,
             format='json'
         )
-        self.vendor = Vendor.objects.get(id=vendor_response.data['id'])
+        self.vendor = get_user_model().objects.get(
+            id=vendor_response.data['id']
+        )
 
         # generate access token
         access_token_url = reverse('obtain-token-pair')

@@ -123,7 +123,7 @@ class VendorPerformance(models.Model):
         Model designed to oversee and record statistical
         data encompassing the performance indexes of vendors.
     """
-    vendor = models.OneToOneField(Vendor, on_delete=models.CASCADE)
+    vendor = models.OneToOneField(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     on_time_delivery_rate = models.FloatField(null=True, blank=True)
@@ -132,7 +132,7 @@ class VendorPerformance(models.Model):
     fulfillment_rate = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.vendor.user}'s performance data"
+        return f"{self.vendor}'s performance data"
 
 
 @receiver(post_save, sender=Vendor)
@@ -144,5 +144,5 @@ def create_performance_instance(sender, created, instance, **kwargs):
     if created:
         vendor = Vendor.objects.get(id=instance.id)
         VendorPerformance.objects.create(
-            vendor=vendor
+            vendor=vendor.user
         )

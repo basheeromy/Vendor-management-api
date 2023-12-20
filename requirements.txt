@@ -7,3 +7,4 @@ drf-spectacular==0.26.5
 Faker==20.1.0
 python-dotenv==1.0.0
 django-debug-toolbar==4.2.0
+drf-writable-nested==0.7.1

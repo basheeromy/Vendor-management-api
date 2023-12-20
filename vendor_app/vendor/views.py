@@ -41,7 +41,9 @@ class ListCreateVendorView(ListCreateAPIView):
         to error).
     """
     serializer_class = VendorSerializer
-    queryset = User.objects.filter(is_seller=True).prefetch_related('vendor_data')
+    queryset = User.objects.filter(
+        is_seller=True
+    ).prefetch_related('vendor_data')
 
 
 class ManageVendorView(RetrieveUpdateDestroyAPIView):
@@ -81,6 +83,9 @@ class VendorPerformanceStatsView(RetrieveAPIView):
     """
         View to get statistical data of a
         Vendor's performance.
+
+        Give vendor's user id as input (path params)
+        to get performance data.
     """
 
     serializer_class = VendorPerformanceSerializer

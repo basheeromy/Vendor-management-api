@@ -56,7 +56,7 @@ class AcknowledgePOView(APIView):
 
     def patch(self, request, *args, **kwargs):
 
-        # Access url parameters.
+        # Access url path parameters.
         id = kwargs.get('id')
 
         obj = get_object_or_404(PurchaseOrder, id=id)

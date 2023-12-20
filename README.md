@@ -18,102 +18,79 @@ directly within the interface.
 
 Getting Started
 
-1. Clone this repository.
+<h3>Clone this repository.</h3>
 
-    $ git clone https://github.com/basheeromy/Vendor-management-api.git
+git clone https://github.com/basheeromy/Vendor-management-api.git
 
 move to the cloned directory.
 
-2. Setup virtual environment.
+<h4>Setup virtual environment.</h4>
 
-    $ python3 -m venv venv
+    python3 -m venv venv
 
-    $ source venv/bin/activate
+source venv/bin/activate
 
-3. Set up the project dependencies.
+<h4>Set up the project dependencies.</h4>
 
-    $ pip install -r requirements.txt
+    pip install -r requirements.txt
 
-    Install development dependencies if needed.
+<h4>Install development dependencies if needed.</h4>
 
-    $ pip install -r requirements.dev.txt
+    pip install -r requirements.dev.txt
 
-4. Generate a new secret key.
+<h4>Generate a new secret key.</h4>
 
 here is a way to generate secret key
 
 open terminal.
 
-    $ python3
+    python3
 
     >>> import secrets
 
     >>> print(secrets.token_urlsafe())
 
-copy the generated secret key
+<h4>copy the generated secret key</h4>
 
     >>> exit()
 
-4. Move to project directory.
+<h4>Move to project directory.</h4>
 
-    $ cd vendor_app
+    cd vendor_app
 
-5. Create .env file in the project root directory.(where settings.py file exists)
+Create .env file in the project root directory.(where settings.py file exists)
 and paste SECRET_KEY=<secret_key>
 
-6. apply migrations ( move to the directory which includes manage.py file )
+<h4>Apply migrations</h4> ( move to the directory which includes manage.py file )
 
-    $ python manage.py makemigrations
+    python manage.py makemigrations
 
-    $ python manage.py migrate
+    python manage.py migrate
 
-7. create super user to access admin interface.
+<h4>Create super user to access admin interface.</h4>
 
-    $ python manage.py createsuperuser
+    python manage.py createsuperuser
 
-8. use the bellow given command to run the server.
+<h4>Use the bellow given command to run the server.</h4>
 
-    $ python manage.py runserver
+    python manage.py runserver
 
-By incorporating efficient unit tests into our application,
+<h4>Unit tests </h4> By incorporating efficient unit tests into our application,
 we're equipped to execute them using the following command:
 
-    $ python manage.py test
+    python manage.py test
 
-If we have installed the dev dependencies, we can use linting tool
+<h4>Linting</h4> If we have installed the dev dependencies, we can use linting tool
 with the help of following command to check pep8 standard.
 
-    $ flake8
-
-Run the application.
+    flake8
 
 Details of Dependencies.
 
-python version 3.11.6
+Python version 3.11.6
 
 Framework ~ Django==4.2.7
 
-Following are the libraries and packages used in this api application.
-
-django-cors-headers==4.3.1,
-
-django-debug-toolbar==4.2.0,
-
-django-filter==23.4,
-
-djangorestframework==3.14.0,
-
-djangorestframework-simplejwt==5.3.0,
-
-drf-spectacular==0.26.5,  (swagger)
-
-Faker==20.1.0, (we used to generate random texts in specific format.)
-
-flake8==6.1.0, (linting tool.
-see .flake8 file in django application's root directory.
-use flake8 command on cli to check pep8 standard.)
-
-python-dotenv==1.0.0
 
 
 ----------------------------------

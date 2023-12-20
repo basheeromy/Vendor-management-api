@@ -16,7 +16,7 @@ class VendorModelSignalsTest(TestCase):
             email='test@example.com',
             name='test Vendor',
             password='testpass123',
-            vendor_data = {
+            vendor_data={
                 "contact_details": "contact me here",
                 "address": "test address, street one, india",
                 "vendor_code": "87654324"
@@ -34,12 +34,12 @@ class VendorModelSignalsTest(TestCase):
         fulfillment_rate = None
 
         perf_data = VendorPerformance.objects.filter(
-            vendor=self.vendor.vendor_data
+            vendor=self.vendor
         ).first()
 
         self.assertEqual(
             perf_data.vendor,
-            self.vendor.vendor_data
+            self.vendor
         )
         self.assertEqual(
             perf_data.on_time_delivery_rate,
